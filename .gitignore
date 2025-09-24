@@ -1,0 +1,75 @@
+# Dependencies# Node modules
+
+node_modules/node_modules/
+
+*/node_modules/
+
+**/node_modules/# Logs
+
+npm-debug.log*
+
+# Environment variablesyarn-debug.log*
+
+.envyarn-error.log*
+
+.env.local
+
+.env.production# Build directories
+
+.env.testdist/
+
+build/
+
+# IDE
+
+.vscode/# Env files
+
+*.swp.env
+
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Build outputs
+dist/
+build/
+out/
+
+# Next.js
+.next/
+next-env.d.ts
+
+# Temporary folders
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
