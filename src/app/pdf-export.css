@@ -1,0 +1,26 @@
+/* PDF Export CSS Reset */
+.pdf-export-mode * {
+  color: rgb(0, 0, 0) !important;
+  background-color: rgb(255, 255, 255) !important;
+  border-color: rgb(229, 231, 235) !important;
+  box-shadow: none !important;
+}
+
+.pdf-export-mode .text-blue-600 { color: rgb(37, 99, 235) !important; }
+.pdf-export-mode .text-green-600 { color: rgb(22, 163, 74) !important; }
+.pdf-export-mode .text-yellow-600 { color: rgb(217, 119, 6) !important; }
+.pdf-export-mode .text-red-600 { color: rgb(220, 38, 38) !important; }
+.pdf-export-mode .text-gray-600 { color: rgb(75, 85, 99) !important; }
+.pdf-export-mode .text-gray-500 { color: rgb(107, 114, 128) !important; }
+.pdf-export-mode .text-muted-foreground { color: rgb(107, 114, 128) !important; }
+
+.pdf-export-mode .bg-blue-50 { background-color: rgb(239, 246, 255) !important; }
+.pdf-export-mode .bg-green-50 { background-color: rgb(240, 253, 244) !important; }
+.pdf-export-mode .bg-yellow-50 { background-color: rgb(254, 252, 232) !important; }
+.pdf-export-mode .bg-red-50 { background-color: rgb(254, 242, 242) !important; }
+.pdf-export-mode .bg-gray-50 { background-color: rgb(249, 250, 251) !important; }
+.pdf-export-mode .bg-gray-100 { background-color: rgb(243, 244, 246) !important; }
+
+.pdf-export-mode .border { border-color: rgb(229, 231, 235) !important; }
+.pdf-export-mode .border-gray-200 { border-color: rgb(229, 231, 235) !important; }
+.pdf-export-mode .border-blue-200 { border-color: rgb(191, 219, 254) !important; }
