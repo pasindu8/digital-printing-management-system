@@ -1,74 +1,63 @@
-## Digital Printing Management System
+## Frontend (Next.js) Overview
 
-### Overview
-[cite_start]The Digital Printing Management System is designed to automate and streamline various manual processes of a printing business[cite: 130, 527, 553]. This comprehensive web application provides modular functionality covering Order, Inventory, Finance, HR, Delivery, Scheduling and Reporting workflows. The frontend (Next.js / React) and backend (Node.js / Express / MongoDB) communicate over REST APIs secured with JWT and OAuth authentication plus role-based authorization.
+[cite_start]Digital Printing Management System frontend implementing responsive user interface for automated printing business processes[cite: 130, 527, 553]. This Next.js application provides customer-facing and management interfaces for Order, Inventory, Finance, HR, Delivery, Dashboard and Auth workflows.
 
-### Core Modules & Capabilities
-* **Order Management**  
-  [cite_start]**For Customers**: The system allows customers to view sample products, register and log in, request quotations, and convert approved quotations into orders by uploading their design files[cite: 193, 194, 195, 196]. [cite_start]They can also track their order status in real-time and view the shop's location for pickup or delivery[cite: 197, 198].  
-  [cite_start]**For Managers**: Order managers can generate prices for quotations, approve or reject orders, update order statuses, and create reports on order volumes to analyze sales trends[cite: 200, 201, 203, 205].
-* **Inventory Management**  
-  [cite_start]**For Managers**: Add, update, and remove raw materials[cite: 184]. [cite_start]Automatically reduce stock levels when an order is placed and provide low-stock alerts[cite: 185, 186, 663]. [cite_start]Generate detailed stock reports and view a visual stock dashboard[cite: 189, 190].  
-  [cite_start]**For Workers**: Record raw materials used per order for accurate inventory updates[cite: 188].
-* **Finance Management**  
-  [cite_start]Automates generation of invoices when an order is confirmed and maintains a digital ledger of income, expenses, and payments[cite: 155, 156, 576]. [cite_start]Automatically calculates staff salaries from attendance records[cite: 158]. [cite_start]Finance managers generate financial reports and view real-time dashboard summaries and cash flow[cite: 157, 160].
-* **Human Resources (HR) Management**  
-  [cite_start]**For Managers**: Register / maintain employee profiles, record attendance, track leave[cite: 164, 166]. [cite_start]Monitor performance and completed tasks[cite: 170].  
-  [cite_start]**For Staff**: View salary details and payslips[cite: 159, 169]. [cite_start]Apply for leave[cite: 168].
-* **Delivery Management**  
-  [cite_start]**For Delivery Personnel**: View assigned deliveries, access customer locations via Google Maps, update delivery status, generate automatic delivery reports[cite: 177, 178, 179, 180].  
-  [cite_start]**For Owners/Customers**: Owner views calendar of all deliveries[cite: 181]. Customers track delivery status[cite: 182].
+### Business Module Features
+[cite_start]Designed to be responsive, working smoothly on PCs, tablets, and mobile phones[cite: 424, 425, 418]. This frontend consumes backend REST APIs and renders:
 
-### Technology & Architecture
-[cite_start]The proposed system has a modular architecture[cite: 418]. [cite_start]It uses a **ReactJS** front-end for the user interface and a **Node.js** and **Express.js** back-end for handling API routes[cite: 421, 422]. [cite_start]**MongoDB** is used as the database to store all system data[cite: 423]. [cite_start]For security, it uses **JWT** (JSON Web Tokens) for authentication, and it is designed to be responsive, working smoothly on PCs, tablets, and mobile phones[cite: 424, 425, 418].
+#### Customer Interface
+- [cite_start]View sample products and request quotations[cite: 193, 194]
+- [cite_start]Register, log in, and convert approved quotations into orders by uploading design files[cite: 195, 196]
+- [cite_start]Real-time order status tracking[cite: 197]
+- [cite_start]View shop location for pickup or delivery[cite: 198]
+- [cite_start]Track delivery status to know when order will arrive[cite: 182]
 
-### Backend Structure (folder: `backend/`)
-- `models/` Domain schemas (Orders, Users, Raw Materials, Finance, HR, etc.)
-- `routes/` Express route modules per domain
-- `controllers/` Business logic (materials, suppliers, orders)
-- `middleware/` Auth (JWT), error handling
-- `utils/` Helpers (async handler, ID generation)
-- `server.js` / `app.js` bootstrap & middleware wiring
-- `seed*.js` Data seeding scripts
+#### Management Interface
+- [cite_start]Order managers: Generate prices for quotations, approve/reject orders, update statuses, create sales trend reports[cite: 200, 201, 203, 205]
+- [cite_start]Inventory managers: Add/update/remove raw materials, view stock dashboards, generate stock reports[cite: 184, 189, 190]
+- [cite_start]Finance managers: View automated invoices, digital ledger, financial reports, real-time dashboard summaries[cite: 155, 156, 157, 160, 576]
+- [cite_start]HR managers: Register/maintain employee profiles, record attendance, track leave, monitor performance[cite: 164, 166, 170]
+- [cite_start]Owners: View delivery calendar for effective scheduling[cite: 181]
 
-### Frontend Structure (folder: `itp/`)
-- `src/app/` Next.js App Router routes per module (dashboard, orders, inventory, finance, hr, etc.)
-- `src/components/` Reusable UI & layout components
-- `src/lib/` Utilities (PDF export, generic helpers)
-- `public/` Static assets
+#### Staff Interface  
+- [cite_start]Workers: Record raw materials used per order[cite: 188]
+- [cite_start]Staff: View salary details, payslips, apply for leave[cite: 159, 168, 169]
+- [cite_start]Delivery personnel: View assigned deliveries, access Google Maps locations, update delivery status, generate reports[cite: 177, 178, 179, 180]
 
-### Authentication Flow
-1. Local auth (register/login) returns JWT stored client-side.  
-2. Google OAuth (Passport) performs external consent, backend generates JWT, redirects to frontend with token + user payload.  
-3. Protected routes verify JWT; role-based checks (manager, staff, delivery) enforced at route/middleware level.
+### Tech Stack
+- [cite_start]ReactJS front-end for the user interface[cite: 421]
+- Next.js (App Router) framework
+- [cite_start]Responsive design for PCs, tablets, and mobile phones[cite: 424, 425, 418]
+- CSS Modules / Global styles (`globals.css`)
+- PDF export utilities (`src/lib/pdfExport.js` / stylesheet)
+- [cite_start]JWT (JSON Web Tokens) for authentication[cite: 424] + Google OAuth redirect handling
 
-### Key Cross-Cutting Concerns
-- Validation & Error Handling: Centralized middleware returns consistent JSON errors.
-- Security: JWT, sessions only for OAuth handshake, CORS restricted to frontend origin.
-- Reporting & Dashboards: Aggregations over Orders, Inventory, Finance, Delivery collections.
-- Data Consistency: Inventory decremented atomically during order confirmation; attendance drives payroll calculations.
+### Structure
+- `src/app/` Route segments per module (orders, inventory, finance, hr, etc.)
+- `src/components/` Shared UI (layout, form elements)
+- `src/lib/` Utilities (pdfExport, generic helpers)
+- `public/` Assets
 
-### Environment Variables (sample)
+### Auth Flow (Frontend Perspective)
+1. Local login posts credentials; stores JWT + user in `localStorage`.
+2. Google OAuth button redirects to backend `/api/auth/google`.
+3. Callback returns token & user via query params; parsed and stored; user redirected to dashboard.
+
+### Getting Started
+```bash
+npm install
+npm run dev
 ```
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/itp
-JWT_SECRET=replace_me
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
-SESSION_SECRET=replace_me_session
-```
+Visit: http://localhost:3000
 
-### Development
-Backend: `cd backend && npm install && npm start`  
-Frontend: `cd itp && npm install && npm run dev`  
+### Environment Assumptions
+Backend runs at `http://localhost:5000` with CORS enabled for `http://localhost:3000`.
 
-### Next Steps / Roadmap
-- Complete GitHub OAuth provider
-- Add automated test coverage (Jest) for critical APIs
-- Improve stock usage audit trails per order line item
-- Add role management UI
-- CI pipeline for lint/test/build
+### Next Steps
+- Implement protected client components that validate token freshness
+- Add loading & error boundaries around data-heavy pages
+- Introduce design system tokens for consistent spacing/typography
 
-### License
-Internal / educational project (license not specified yet).
+### Deployment
+Standard Next.js build (`npm run build` / `npm start`) or Vercel deployment. Ensure environment variables and backend URL are configured in production.
+
