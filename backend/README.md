@@ -1,12 +1,463 @@
-## Backend Overview
+# Digital Printing Management System - Backend
 
-[cite_start]Digital Printing Management System backend implementing REST APIs for automated business processes[cite: 130, 527, 553]. Built with Express + Mongoose in a modular structure covering Order, Inventory, Finance, HR, and Delivery management.
+## 📋 Overview
+Complete backend API system for digital printing business management built with Node.js, Express.js, and MongoDB.
+
+## 🏗️ Architecture
+
+### MVC Pattern
+- **Models**: Database schemas and data validation
+- **Controllers**: Business logic and request handling
+- **Routes**: API endpoints and routing
+- **Middleware**: Authentication, error handling, validation
+
+## 📁 Project Structure
+
+```
+backend/
+├── 📄 app.js                    # Express application setup
+├── 📄 server.js                 # Main server entry point
+├── 📄 package.json             # Dependencies and scripts
+├── 📄 .env                     # Environment variables
+├── 📄 .gitignore              # Git ignored files
+├── 📄 jest.config.js          # Testing configuration
+│
+├── 📁 config/
+│   └── passport.js             # OAuth authentication strategies
+│
+├── 📁 controllers/             # Business logic handlers
+│   ├── materialOrderController.js    # Raw material orders
+│   ├── rawMaterialController.js      # Inventory management
+│   └── supplierController.js         # Supplier management
+│
+├── 📁 middleware/
+│   ├── auth.js                 # JWT authentication
+│   └── errorHandler.js         # Global error handling
+│
+├── 📁 models/                  # MongoDB schemas
+│   ├── User.js                 # User accounts & authentication
+│   ├── Customer.js             # Customer information
+│   ├── Order.js                # Print job orders
+│   ├── Employee_Details.js     # Employee records
+│   ├── Raw_materials.js        # Inventory items
+│   ├── Material_orders.js      # Supplier orders
+│   ├── Suppliers.js            # Vendor information
+│   ├── Production.js           # Manufacturing workflow
+│   ├── Schedule.js             # Production scheduling
+│   ├── Delivery.js             # Shipping & logistics
+│   ├── Billing.js              # Invoicing & payments
+│   ├── Finance.js              # Financial records
+│   ├── HR.js                   # Human resources
+│   ├── CompanySettings.js      # System configuration
+│   └── Counter.js              # Auto-increment IDs
+│
+├── 📁 routes/                  # API endpoints
+│   ├── authRoutes.js           # Authentication APIs
+│   ├── customers.js            # Customer management
+│   ├── orderRoutes.js          # Order processing
+│   ├── production.js           # Production management
+│   ├── delivery.js             # Shipping & tracking
+│   ├── billing.js              # Invoice generation
+│   ├── finance.js              # Financial operations
+│   ├── hr.js                   # Employee management
+│   ├── rawMaterials.js         # Inventory control
+│   ├── materialOrders.js       # Supplier orders
+│   ├── suppliers.js            # Vendor management
+│   ├── schedule.js             # Production planning
+│   ├── reports.js              # Analytics & reporting
+│   ├── notifications.js        # Email/SMS notifications
+│   └── settings.js             # System configuration
+│
+├── 📁 utils/                   # Helper functions
+│   ├── asyncHandler.js         # Async error handling
+│   ├── emailService.js         # Email sending
+│   ├── supplierEmailService.js # Supplier notifications
+│   ├── invoiceGenerator.js     # PDF invoice creation
+│   ├── generateId.js           # Unique ID generation
+│   └── employeeUtils.js        # Employee utilities
+│
+└── 📁 uploads/                 # File storage
+    ├── invoices/               # Generated PDF invoices
+    └── receipts/               # Payment receipts
+```
+
+## 🔧 Core Features
+
+### 1. Authentication & Authorization
+- **JWT Token Authentication**
+- **OAuth Integration** (Google, GitHub)
+- **Role-based Access Control** (Admin, Employee, Customer)
+- **Password Reset & Email Verification**
+
+### 2. Customer Management
+- Customer registration & profiles
+- Order history tracking
+- Address management
+- Payment history
+
+### 3. Order Processing
+- Print job order creation
+- Specification management
+- Status tracking (Pending → Production → Delivery)
+- Customer notifications
+
+### 4. Production Management
+- Job scheduling & assignment
+- Employee task allocation
+- Production workflow tracking
+- Quality control checkpoints
+
+### 5. Inventory Management
+- Raw material stock tracking
+- Supplier order management
+- Automatic reorder alerts
+- Damage/waste tracking
+
+### 6. Financial System
+- Invoice generation (PDF)
+- Payment tracking
+- Expense management
+- Ledger entries & accounting
+- Financial reporting
+
+### 7. HR Management
+- Employee records
+- Attendance tracking
+- Payroll management
+- Leave management
+
+### 8. Supplier Management
+- Vendor database
+- Purchase order automation
+- Email notifications
+- Performance tracking
+
+## 🚀 Getting Started
+
+### Prerequisites
+```bash
+Node.js (v16+)
+MongoDB (v5+)
+npm or yarn
+```
+
+### Installation
+```bash
+# Clone repository
+git clone <repository-url>
+cd backend
+
+# Install dependencies
+npm install
+
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Start development server
+npm run dev
+```
+
+### Environment Variables
+```env
+# Database
+MONGO_URI=mongodb://localhost:27017/printing_system
+
+# Server
+PORT=5000
+NODE_ENV=development
+
+# JWT
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRE=30d
+
+# OAuth (Google)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:5000/auth/google/callback
+
+# OAuth (GitHub)
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_CALLBACK_URL=http://localhost:5000/auth/github/callback
+
+# Email Service
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+
+# Company Info
+COMPANY_NAME=Your Printing Company
+COMPANY_EMAIL=info@yourcompany.com
+```
+
+## 📡 API Endpoints
+
+### Authentication
+```
+POST   /api/auth/register       # User registration
+POST   /api/auth/login          # User login
+GET    /api/auth/google         # Google OAuth
+GET    /api/auth/github         # GitHub OAuth
+POST   /api/auth/forgot-password # Password reset
+```
+
+### Customers
+```
+GET    /api/customers           # List all customers
+POST   /api/customers           # Create customer
+GET    /api/customers/:id       # Get customer details
+PUT    /api/customers/:id       # Update customer
+DELETE /api/customers/:id       # Delete customer
+```
+
+### Orders
+```
+GET    /api/orders              # List orders
+POST   /api/orders              # Create order
+GET    /api/orders/:id          # Get order details
+PUT    /api/orders/:id          # Update order
+DELETE /api/orders/:id          # Cancel order
+POST   /api/orders/:id/assign   # Assign to production
+```
+
+### Production
+```
+GET    /api/production          # Production dashboard
+POST   /api/production/assign   # Assign job to employee
+PUT    /api/production/:id/status # Update job status
+GET    /api/production/schedule # Production schedule
+```
+
+### Inventory
+```
+GET    /api/raw-materials       # List materials
+POST   /api/raw-materials       # Add material
+PUT    /api/raw-materials/:id   # Update stock
+GET    /api/material-orders     # Supplier orders
+POST   /api/material-orders     # Create order
+PUT    /api/material-orders/:id/delivered # Mark delivered
+```
+
+### Finance
+```
+GET    /api/billing             # Billing dashboard
+POST   /api/billing/invoice     # Generate invoice
+GET    /api/finance/expenses    # Expense tracking
+POST   /api/finance/expense     # Add expense
+GET    /api/reports/financial   # Financial reports
+```
+
+## 🔐 Authentication Flow
+
+### JWT Authentication
+1. User login with credentials
+2. Server validates and returns JWT token
+3. Client includes token in Authorization header
+4. Server validates token for protected routes
+
+### OAuth Flow
+1. User clicks Google/GitHub login
+2. Redirected to OAuth provider
+3. User authorizes application
+4. Callback creates/links user account
+5. JWT token returned for session
+
+## 📊 Database Models
+
+### User Model
+```javascript
+{
+  name: String,
+  email: String (unique),
+  password: String (hashed),
+  role: ['Customer', 'Employee', 'Admin'],
+  googleId: String,
+  githubId: String,
+  emailVerified: Boolean,
+  createdAt: Date
+}
+```
+
+### Order Model
+```javascript
+{
+  orderId: String (auto-generated),
+  customerId: ObjectId,
+  items: [{
+    product: String,
+    quantity: Number,
+    specifications: Object
+  }],
+  status: ['Pending', 'Production', 'Quality Check', 'Delivered'],
+  totalAmount: Number,
+  assignedEmployee: ObjectId,
+  deadline: Date,
+  createdAt: Date
+}
+```
+
+### Material Order Model
+```javascript
+{
+  order_id: String,
+  material_id: String,
+  supplier_id: String,
+  quantity_ordered: Number,
+  unit_price: Number,
+  total_price: Number,
+  status: ['Pending', 'Confirmed', 'Delivered'],
+  damaged_items_amount: Number,
+  delivery_date: Date
+}
+```
+
+## 🛠️ Business Logic
+
+### Order Processing Workflow
+1. **Customer places order** → Order created with "Pending" status
+2. **Admin/Employee reviews** → Order assigned to production employee
+3. **Production starts** → Status updated to "Production"
+4. **Quality check** → Status updated to "Quality Check"
+5. **Order completed** → Status updated to "Delivered"
+6. **Invoice generated** → PDF invoice sent to customer
+
+### Inventory Management
+1. **Stock monitoring** → Low stock alerts
+2. **Supplier ordering** → Automatic purchase orders
+3. **Delivery tracking** → Update stock levels
+4. **Damage recording** → Adjust usable quantities
+
+### Financial Integration
+1. **Order completion** → Invoice generation
+2. **Material delivery** → Expense entry creation
+3. **Payment received** → Ledger entry update
+4. **Monthly reports** → Financial analytics
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- auth.test.js
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+## 📦 Deployment
+
+### Production Setup
+```bash
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Using PM2 (recommended)
+pm2 start server.js --name "printing-backend"
+pm2 startup
+pm2 save
+```
+
+### Docker Deployment
+```dockerfile
+FROM node:16-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 5000
+CMD ["node", "server.js"]
+```
+
+## 🔧 Configuration
+
+### Email Templates
+- **Order confirmation** → Customer notification
+- **Invoice delivery** → PDF attachment
+- **Supplier orders** → Purchase order details
+- **Status updates** → Real-time notifications
+
+### PDF Generation
+- **Invoice templates** → Company branding
+- **Order specifications** → Detailed requirements
+- **Reports** → Financial & operational data
+
+## 🚨 Error Handling
+
+### Global Error Middleware
+- **Validation errors** → 400 Bad Request
+- **Authentication errors** → 401 Unauthorized
+- **Authorization errors** → 403 Forbidden
+- **Not found errors** → 404 Not Found
+- **Server errors** → 500 Internal Server Error
+
+### Logging
+- **Request logging** → API access tracking
+- **Error logging** → Debug information
+- **Business events** → Audit trails
+
+## 🔒 Security Features
+
+- **Password hashing** (bcrypt)
+- **JWT token security**
+- **Rate limiting**
+- **Input validation & sanitization**
+- **CORS configuration**
+- **Environment variable protection**
+
+## 📈 Performance
+
+### Database Optimization
+- **Indexing** on frequently queried fields
+- **Aggregation pipelines** for complex queries
+- **Connection pooling**
+- **Query optimization**
+
+### Caching Strategy
+- **Session caching**
+- **Frequently accessed data**
+- **API response caching**
+
+## 🔄 API Versioning
+
+Current version: **v1**
+Base URL: `/api/v1`
+
+Future versions will maintain backward compatibility.
+
+## 📞 Support
+
+For technical support or questions:
+- **Email**: support@yourcompany.com
+- **Documentation**: /docs
+- **API Reference**: /api-docs
+
+---
+
+## 🎯 Key Benefits
+
+✅ **Complete Business Management** - End-to-end printing business operations  
+✅ **Scalable Architecture** - Microservices-ready design  
+✅ **Real-time Notifications** - Email & system alerts  
+✅ **Financial Integration** - Automated accounting entries  
+✅ **Multi-user Support** - Role-based access control  
+✅ **Inventory Automation** - Smart reordering & tracking  
+✅ **Production Workflow** - Streamlined job management  
+✅ **Customer Portal** - Self-service order tracking  
+
+**Built for efficiency, designed for growth!** 🚀
+
+## ----------------------------- PREVIOUS CONTENT BELOW -----------------------------
 
 ### Key Business Modules
 
 #### Order Management
-* [cite_start]**For Customers**: View sample products, register and log in, request quotations, and convert approved quotations into orders by uploading design files[cite: 193, 194, 195, 196]. [cite_start]Track order status in real-time and view shop location for pickup or delivery[cite: 197, 198].
-* [cite_start]**For Managers**: Generate prices for quotations, approve or reject orders, update order statuses, and create reports on order volumes to analyze sales trends[cite: 200, 201, 203, 205].
 
 #### Inventory Management  
 * [cite_start]**For Managers**: Add, update, and remove raw materials[cite: 184]. [cite_start]Automatically reduce stock levels when an order is placed and provide low-stock alerts[cite: 185, 186, 663]. [cite_start]Generate detailed stock reports and view a visual stock dashboard for better decision-making[cite: 189, 190].
