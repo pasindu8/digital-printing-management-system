@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## Frontend (Next.js) Overview
 
 [cite_start]Digital Printing Management System frontend implementing responsive user interface for automated printing business processes[cite: 130, 527, 553]. This Next.js application provides customer-facing and management interfaces for Order, Inventory, Finance, HR, Delivery, Dashboard and Auth workflows.
@@ -61,3 +62,7 @@ Backend runs at `http://localhost:5000` with CORS enabled for `http://localhost:
 ### Deployment
 Standard Next.js build (`npm run build` / `npm start`) or Vercel deployment. Ensure environment variables and backend URL are configured in production.
 
+=======
+# Digital-Printing-Management-System-1
+Digital Printing  Management System 
+>>>>>>> 2bfcb51bf224bb7af738dcf35ed1421090b5c262
