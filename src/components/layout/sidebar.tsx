@@ -62,7 +62,7 @@ export function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
     {
       icon: <BarChart3 className="h-5 w-5" />,
       label: "Dashboard",
-      href: "/dashboard",
+      href: userRole === 'Customer' ? "/dashboard/customer" : "/dashboard",
       roles: ['Admin', 'General_Manager', 'Order_Manager', 'Stock_Manager', 'HR_Manager', 'Staff', 'Employee', 'Customer']
     },
     {
@@ -156,7 +156,7 @@ export function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
       icon: <Settings className="h-5 w-5" />,
       label: "Settings",
       href: "/settings",
-      roles: ['Admin', 'General_Manager', 'Order_Manager', 'Stock_Manager', 'HR_Manager', 'Delivery_Person', 'Staff', 'Employee', 'Customer']
+      roles: ['Admin', 'General_Manager', 'Order_Manager', 'Stock_Manager', 'HR_Manager', 'Delivery_Person', 'Staff', 'Employee']
     },
   ];
 
@@ -212,18 +212,18 @@ export function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
 
   return (
      <div
-      className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50
+      className={`fixed top-0 left-0 h-full w-64 bg-[#eeffe6] shadow-lg z-50
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
     
       <div className="h-full flex flex-col">
         <div className="px-4 py-2 flex-shrink-0">
           <div className="flex items-center gap-2 px-2">
-            <HardDrive className="h-6 w-6" />
+           <img src="/logo1 (2).png" alt="Logo" className="h-8 w-8"/>
             <h2 className="text-lg font-semibold tracking-tight">
-              Digital Print
+              First Promovier
 
-              <Button className="ml-[40px]" variant="ghost" size="icon" onClick={toggleSidebar}>
+              <Button className="ml-[10px]" variant="ghost" size="icon" onClick={toggleSidebar}>
                 <X className="h-5 w-5" />
               </Button>
 

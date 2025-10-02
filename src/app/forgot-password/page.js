@@ -59,7 +59,7 @@ export default function ForgotPassword() {
 
   if (emailSent) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+      <div className="flex items-center justify-center min-h-screen bg-[#cccccc] p-4">
         <Card className="w-full max-w-md shadow-lg rounded-2xl">
           <CardContent className="p-8">
             {/* Header */}
@@ -79,7 +79,7 @@ export default function ForgotPassword() {
                 {message}
               </p>
               <p className="text-green-700 text-sm text-center">
-                We've sent a password reset link to <strong>{email}</strong>
+                We've sent a verification code to <strong>{email}</strong>
               </p>
             </div>
 
@@ -88,7 +88,8 @@ export default function ForgotPassword() {
               <h3 className="font-semibold text-blue-800 mb-2">Next steps:</h3>
               <ol className="text-blue-700 text-sm space-y-1 list-decimal list-inside">
                 <li>Check your email inbox (and spam folder)</li>
-                <li>Click the password reset link</li>
+                <li>Find the 6-digit verification code</li>
+                <li>Enter the code on the reset password page Click <a href='http://localhost:3000/reset-password'>here</a></li>
                 <li>Create a new password</li>
                 <li>Log in with your new password</li>
               </ol>
@@ -125,7 +126,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-[#cccccc] p-4">
       <Card className="w-full max-w-md shadow-lg rounded-2xl">
         <CardContent className="p-8">
           {/* Header */}
@@ -142,7 +143,7 @@ export default function ForgotPassword() {
           {/* Description */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-gray-700 text-sm text-center">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we'll send you a verification code to reset your password.
             </p>
           </div>
 
@@ -168,7 +169,7 @@ export default function ForgotPassword() {
               disabled={loading}
               className="w-full bg-blue-500 hover:bg-blue-600"
             >
-              {loading ? 'Sending...' : 'Send Reset Link'}
+              {loading ? 'Sending...' : 'Send Verification Code'}
             </Button>
           </form>
 

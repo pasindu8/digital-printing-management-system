@@ -813,7 +813,9 @@ function EmployeeForm({ onClose, onEmployeeAdded, employee = null, isEdit = fals
                 <div>
                     <label className="text-sm font-medium">Hire Date *</label>
                     <Input
-                        type="date"
+                        type="date" 
+                        min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                        max={new Date(Date.now() + 2592000000).toISOString().split('T')[0]}
                         value={formData.employment.hireDate}
                         onChange={(e) => setFormData(prev => ({
                             ...prev,

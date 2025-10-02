@@ -520,10 +520,7 @@ export default function Settings() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium">Current Users</h3>
-                  <Button onClick={() => setShowAddUser(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add User
-                  </Button>
+                  
                 </div>
 
                 {showAddUser && (

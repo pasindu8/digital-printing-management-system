@@ -5,12 +5,12 @@ export const rolePermissions = {
   'Customer': {
     allowedRoutes: [
       '/dashboard',
-      '/customer-dashboard', 
+      '/dashboard/customer', 
       '/orders',
       '/delivery',
       '/settings'
     ],
-    redirectTo: '/customer-dashboard'
+    redirectTo: '/dashboard/customer'
   },
   'Admin': {
     allowedRoutes: [

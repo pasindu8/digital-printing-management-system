@@ -2,22 +2,10 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { 
-  TrendingUp, 
-  TrendingDown,
-  Users,
-  BarChart3,
-  Activity,
-  ArrowUpIcon,
-  ArrowDownIcon
-} from "lucide-react";
+import {Card, CardContent, CardHeader, CardTitle,} 
+from "@/components/ui/card";
+import { ArrowUpIcon, ArrowDownIcon } 
+from "lucide-react";
 import {
   LineChart,
   Line,

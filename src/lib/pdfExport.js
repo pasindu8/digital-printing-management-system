@@ -104,14 +104,23 @@ export const exportToPDF = async (elementId, filename = 'dashboard-report') => {
     const originalClasses = element.className;
     element.classList.add('pdf-export-mode');
 
-    // Create canvas from the element with better options to handle modern CSS
+    // Measure element to capture full content height
+    const targetWidth = element.scrollWidth || element.clientWidth || 750;
+    const targetHeight = element.scrollHeight || element.clientHeight || 1000;
+
+    // Create canvas from the element with better options to handle modern CSS and full height
     const canvas = await html2canvas(element, {
-      scale: 1.5,
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       removeContainer: true,
       logging: false,
+      width: targetWidth,
+      height: targetHeight,
+      windowWidth: targetWidth,
+      windowHeight: targetHeight,
+      dpi: 300,
       ignoreElements: (element) => {
         // Ignore elements that might cause issues
         return element.classList?.contains('ignore-pdf') || 
@@ -137,13 +146,13 @@ export const exportToPDF = async (elementId, filename = 'dashboard-report') => {
           }
         });
         
-        // Add safe CSS reset
+        // Add safe CSS reset - only override problematic properties, preserve backgrounds and colors set by inline styles
         const safeStyle = clonedDoc.createElement('style');
         safeStyle.textContent = `
-          *, *::before, *::after {
-            color: rgb(0, 0, 0) !important;
-            background-color: rgb(255, 255, 255) !important;
-            border-color: rgb(229, 231, 235) !important;
+          * {
+            box-shadow: none !important;
+            transition: none !important;
+            transform: none !important;
           }
           .text-blue-600 { color: rgb(37, 99, 235) !important; }
           .text-green-600 { color: rgb(22, 163, 74) !important; }
@@ -167,62 +176,84 @@ export const exportToPDF = async (elementId, filename = 'dashboard-report') => {
     // Restore original classes
     element.className = originalClasses;
 
-    const imgData = canvas.toDataURL('image/png');
-    
-    // Create PDF
+    // Create PDF with multi-page support
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    const imgWidth = pdfWidth - 20; // 10mm margin on each side
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    
-    let heightLeft = imgHeight;
-    let position = 10; // 10mm top margin
 
-    // Add company header
-    pdf.setFontSize(20);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('The First Promovier', 10, position);
-    
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('Digital Printing Management System Dashboard Report', 10, position + 8);
-    
-    pdf.setFontSize(10);
-    pdf.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 10, position + 16);
-    
-    position += 25;
+    // Margins
+    const marginX = 10; // mm
+    const marginTop = 10; // mm
+    const marginBottom = 12; // mm (leave space for footer)
 
-    // Add the main content
-    if (heightLeft <= pdfHeight - position) {
-      // Content fits on one page
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-    } else {
-      // Content needs multiple pages
-      let currentPosition = position;
-      
-      while (heightLeft >= 0) {
-        pdf.addImage(imgData, 'PNG', 10, currentPosition, imgWidth, imgHeight);
-        heightLeft -= (pdfHeight - position);
-        
-        if (heightLeft >= 0) {
-          pdf.addPage();
-          currentPosition = 10;
-        }
+    // Calculate scale ratio: how many mm per canvas pixel when fitting width
+    const usableWidthMM = pdfWidth - marginX * 2;
+    const ratioMMPerPx = usableWidthMM / canvas.width;
+    const usableHeightMM = pdfHeight - marginTop - marginBottom;
+
+    // Pixel height that fits on one page
+    const pageHeightPx = Math.floor(usableHeightMM / ratioMMPerPx);
+
+    // Prepare a temporary canvas to slice the full canvas into page-sized images
+    const pageCanvas = document.createElement('canvas');
+    const ctx = pageCanvas.getContext('2d');
+    pageCanvas.width = canvas.width;
+
+    let renderedHeight = 0;
+    let pageIndex = 0;
+    while (renderedHeight < canvas.height) {
+      // Add a tiny overlap (in pixels) to avoid cutting lines or text at page boundaries
+      const overlapPx = 6; // ~3mm at scale=2, tweak if needed
+      const remaining = canvas.height - renderedHeight;
+      const sliceHeight = Math.min(pageHeightPx, remaining);
+      pageCanvas.height = sliceHeight;
+      ctx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+      // Copy slice from original canvas
+      ctx.drawImage(
+        canvas,
+        0,
+        renderedHeight,
+        canvas.width,
+        sliceHeight,
+        0,
+        0,
+        canvas.width,
+        sliceHeight
+      );
+
+      const imgData = pageCanvas.toDataURL('image/png');
+      const imgWidthMM = usableWidthMM;
+      const imgHeightMM = sliceHeight * ratioMMPerPx;
+      if (pageIndex > 0) pdf.addPage();
+      pdf.addImage(imgData, 'PNG', marginX, marginTop, imgWidthMM, imgHeightMM);
+
+      // Footer for this page
+      pdf.setFontSize(8);
+      pdf.setTextColor(60, 60, 60);
+      pdf.text(
+        `The First Promovier Dashboard Report | ${new Date().toLocaleString('en-GB')}`,
+        marginX,
+        pdfHeight - 6
+      );
+
+      // Advance with overlap, but ensure we don't loop forever at the end
+      if (remaining <= sliceHeight) {
+        renderedHeight += sliceHeight;
+      } else {
+        renderedHeight += sliceHeight - overlapPx;
       }
+      pageIndex += 1;
     }
 
-    // Add footer
+    // Add page numbers
     const pageCount = pdf.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       pdf.setPage(i);
       pdf.setFontSize(8);
-      pdf.text(
-        `Page ${i} of ${pageCount} | The First Promovier Dashboard Report`,
-        10,
-        pdfHeight - 10
-      );
+      pdf.setTextColor(60, 60, 60);
+      const label = `Page ${i} of ${pageCount}`;
+      const labelWidth = pdf.getTextWidth(label);
+      pdf.text(label, pdfWidth - marginX - labelWidth, pdfHeight - 6);
     }
 
     // Save the PDF

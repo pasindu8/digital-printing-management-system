@@ -102,6 +102,8 @@ export default function Delivery() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -166,6 +168,19 @@ export default function Delivery() {
       sampleDelivery: deliveries[0] || null
     });
   }, [deliveries]);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing delivery data...');
+      fetchDeliveries();
+      setLastUpdated(new Date());
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
   const fetchEmployees = async () => {
     try {
@@ -246,6 +261,18 @@ export default function Delivery() {
       setDeliveries([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    console.log('Manual refresh triggered');
+    await fetchDeliveries();
+    setLastUpdated(new Date());
+    
+    // Also refresh ready orders for non-customers
+    const userRole = localStorage.getItem('userRole');
+    if (userRole !== 'Customer') {
+      await fetchReadyOrders();
     }
   };
 
@@ -493,7 +520,7 @@ export default function Delivery() {
 
         {/* Delivery Overview Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="bg-[#ffe0b3]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {!isCustomer ? 'Ready for Pickup' : 'Today\'s Deliveries'}
@@ -509,7 +536,7 @@ export default function Delivery() {
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-[#eeffcc]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
               <Truck className="h-4 w-4 text-blue-600" />
@@ -519,7 +546,7 @@ export default function Delivery() {
               <p className="text-xs text-muted-foreground">Upcoming deliveries</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card   className="bg-[#ffe6ff]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">In Transit</CardTitle>
               <Truck className="h-4 w-4 text-purple-600" />
@@ -529,7 +556,7 @@ export default function Delivery() {
               <p className="text-xs text-muted-foreground">Currently being delivered</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card   className="bg-[#cce0ff]">  
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completed</CardTitle>
               <Truck className="h-4 w-4 text-green-600" />
@@ -551,7 +578,7 @@ export default function Delivery() {
           </TabsList>
           
           <TabsContent value="all-deliveries" className="space-y-4">
-            {/* Search */}
+            {/* Search and Controls */}
             <div className="flex flex-col md:flex-row gap-4 mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -564,8 +591,43 @@ export default function Delivery() {
                 />
               </div>
 
-              <Button variant="outline">
-                Export
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleManualRefresh}
+                  disabled={loading}
+                >
+                  {loading ? <Clock className="h-4 w-4 animate-spin mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
+                  Refresh
+                </Button>
+                <Button variant="outline">
+                  Export
+                </Button>
+              </div>
+            </div>
+
+            {/* Auto-refresh Status */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                  <span className="text-muted-foreground">
+                    Auto-refresh: {autoRefresh ? 'ON (30s)' : 'OFF'}
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+                <div className="text-muted-foreground">
+                  Showing {filteredDeliveries.length} of {deliveries.length} deliveries
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+              >
+                {autoRefresh ? 'Disable Auto-refresh' : 'Enable Auto-refresh'}
               </Button>
             </div>
 
@@ -577,9 +639,10 @@ export default function Delivery() {
                     <TableHead>Delivery ID</TableHead>
                     <TableHead>Order</TableHead>
                     <TableHead>Customer/Address</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Date & Time</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Driver</TableHead>
+                    <TableHead>Coordinates</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -587,34 +650,111 @@ export default function Delivery() {
                   {filteredDeliveries.length > 0 ? (
                     filteredDeliveries.map((delivery) => (
                       <TableRow key={delivery._id}>
-                        <TableCell className="font-medium">{delivery.deliveryId}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium">
                           <div>
-                            <div>{delivery.orderId?.orderId || delivery.orderId || 'No Order ID'}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {delivery.items?.map(item => `${item.product} (${item.quantity})`).join(', ') || 'No items'}
-                            </div>
+                            <div className="text-sm">{delivery.deliveryId}</div>
+                            {delivery.trackingNumber && (
+                              <div className="text-xs text-muted-foreground">
+                                Track: {delivery.trackingNumber}
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div>{delivery.customer?.name || 'Unknown'}</div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {delivery.customer?.address ? 
-                                `${delivery.customer.address.street}, ${delivery.customer.address.city}`.substring(0, 30) + '...' 
-                                : 'No address'
+                            <div className="font-medium text-sm">
+                              {delivery.orderId?.orderId || delivery.orderId || 'No Order ID'}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {delivery.items?.length > 0 
+                                ? `${delivery.items.length} item${delivery.items.length > 1 ? 's' : ''}` 
+                                : 'No items'
                               }
                             </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {delivery.items?.slice(0, 2).map(item => 
+                                `${item.product}${item.quantity ? ` (${item.quantity})` : ''}`
+                              ).join(', ')}
+                              {delivery.items?.length > 2 && '...'}
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell>{new Date(delivery.scheduledDate).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium text-sm">{delivery.customer?.name || 'Unknown'}</div>
+                            <div className="flex items-center text-xs text-muted-foreground mt-1">
+                              <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                              <div className="truncate">
+                                {delivery.customer?.address ? (
+                                  <div>
+                                    <div>{delivery.customer.address.street}</div>
+                                    <div>{delivery.customer.address.city}{delivery.customer.address.state ? `, ${delivery.customer.address.state}` : ''}</div>
+                                    {delivery.customer.address.zipCode && (
+                                      <div>{delivery.customer.address.zipCode}</div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  'No address'
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{new Date(delivery.scheduledDate).toLocaleDateString()}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(delivery.scheduledDate).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                            {delivery.actualDeliveryTime && (
+                              <div className="text-xs text-green-600 mt-1">
+                                Delivered: {new Date(delivery.actualDeliveryTime).toLocaleTimeString([], { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={getStatusBadge(delivery.status)}>
                             {delivery.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{delivery.assignedTo?.name || delivery.driverName || 'Unassigned'}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{delivery.assignedTo?.name || delivery.driverName || 'Unassigned'}</div>
+                            {delivery.assignedTo?.phone && (
+                              <div className="text-xs text-muted-foreground">
+                                {delivery.assignedTo.phone}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs">
+                            {delivery.coordinates ? (
+                              <div>
+                                <div className="text-muted-foreground">Lat: {delivery.coordinates.lat.toFixed(4)}</div>
+                                <div className="text-muted-foreground">Lng: {delivery.coordinates.lng.toFixed(4)}</div>
+                                <div className="text-green-600 mt-1">📍 Mapped</div>
+                              </div>
+                            ) : delivery.customer?.address?.coordinates ? (
+                              <div>
+                                <div className="text-muted-foreground">Lat: {delivery.customer.address.coordinates.lat.toFixed(4)}</div>
+                                <div className="text-muted-foreground">Lng: {delivery.customer.address.coordinates.lng.toFixed(4)}</div>
+                                <div className="text-green-600 mt-1">📍 Mapped</div>
+                              </div>
+                            ) : delivery.customer?.address ? (
+                              <div className="text-yellow-600">🔍 Needs Mapping</div>
+                            ) : (
+                              <div className="text-red-600">❌ No Address</div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -638,7 +778,7 @@ export default function Delivery() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                         {deliveries.length === 0 ? 'No deliveries found' : 'No deliveries match your search criteria'}
                       </TableCell>
                     </TableRow>
@@ -983,23 +1123,84 @@ export default function Delivery() {
           <TabsContent value="map-view" className="pt-4">
             <Card>
               <CardHeader>
-                <CardTitle>Delivery Map</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Delivery Map</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleManualRefresh}
+                      disabled={loading}
+                    >
+                      {loading ? <Clock className="h-4 w-4 animate-spin mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
+                      Refresh Map
+                    </Button>
+                    <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {/* Debug Information */}
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Debug Information:</h4>
-                  <p>Total deliveries: {deliveries.length}</p>
-                  <p>Filtered deliveries: {filteredDeliveries.length}</p>
-                  <p>Deliveries with coordinates: {filteredDeliveries.filter(d => 
-                    d.customer?.address?.coordinates?.lat && d.customer?.address?.coordinates?.lng
-                  ).length}</p>
+                {/* Map Statistics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <Card className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{deliveries.length}</div>
+                      <div className="text-sm text-muted-foreground">Total Deliveries</div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {filteredDeliveries.filter(d => 
+                          d.customer?.address?.coordinates?.lat && d.customer?.address?.coordinates?.lng
+                        ).length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Mapped Locations</div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {deliveries.filter(d => d.status === 'In Transit' || d.status === 'Out_for_Delivery').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">In Transit</div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-amber-600">
+                        {deliveries.filter(d => d.status === 'Scheduled').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Scheduled</div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Real-time Status */}
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg mb-4 text-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium">Live Delivery Tracking</span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Last updated: {lastUpdated.toLocaleTimeString()}
+                    </div>
+                    <div className="text-muted-foreground">
+                      Auto-refresh: {autoRefresh ? 'ON (30s)' : 'OFF'}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-white">
+                    {filteredDeliveries.filter(d => 
+                      d.customer?.address?.coordinates?.lat && d.customer?.address?.coordinates?.lng
+                    ).length} locations mapped
+                  </Badge>
                 </div>
                 
                 <DeliveryMap 
                   deliveries={filteredDeliveries} 
                   onDeliveryClick={handleViewDetails}
-                  key={`delivery-map-${deliveries.length}-${Date.now()}`}
+                  key={`delivery-map-${deliveries.length}-${lastUpdated.getTime()}`}
                 />
               </CardContent>
             </Card>

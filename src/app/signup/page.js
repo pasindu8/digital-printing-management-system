@@ -145,7 +145,7 @@ export default function SignUp() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-[#cccccc] p-4">
       <Card className="w-full max-w-md shadow-lg rounded-2xl">
         <CardContent className="p-8">
           {/* Header */}

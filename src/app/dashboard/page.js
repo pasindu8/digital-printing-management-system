@@ -68,6 +68,12 @@ export default function Dashboard() {
       try {
         const userData = JSON.parse(storedUser);
         if (userData && userData.email) {
+          // Check if user is a customer and redirect to customer dashboard
+          if (userData.role === 'Customer' || userData.userType === 'Customer') {
+            router.push('/dashboard/customer');
+            return;
+          }
+          
           setUser(userData);
           fetchDashboardData();
           return;
@@ -347,7 +353,7 @@ export default function Dashboard() {
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Business Intelligence Dashboard
+              {user?.role == 'Admin' && ( <span>Business Intelligence</span>)} Dashboard
             </h1>
             <p className="text-lg text-muted-foreground">
               Welcome back, {user?.name || user?.email || 'User'}!  {user?.role == 'Admin' && ( <span>Here's your complete business overview.</span>)}
@@ -395,7 +401,7 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
-
+        
         {/* Legacy System Alerts (Fallback) */}
         {dashboardData.systemAlerts?.length > 0 && notifications.length === 0 && (
           <Card className="border-orange-200 bg-orange-50">

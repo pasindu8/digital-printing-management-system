@@ -308,7 +308,7 @@ export default function MyTasksPage() {
 
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                    <Card>
+                    <Card className=" bg-[#ccffdd]">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
                             <Briefcase className="h-4 w-4 text-muted-foreground" />
@@ -318,7 +318,7 @@ export default function MyTasksPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card>
+                    <Card className=" bg-[#b3d9ff]">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Pending</CardTitle>
                             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -328,7 +328,7 @@ export default function MyTasksPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card>
+                    <Card className=" bg-[#ffffb3]">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">In Progress</CardTitle>
                             <ClipboardList className="h-4 w-4 text-muted-foreground" />
@@ -338,7 +338,7 @@ export default function MyTasksPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card>
+                    <Card className=" bg-[#ffe6ff]">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Completed</CardTitle>
                             <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -348,7 +348,7 @@ export default function MyTasksPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card>
+                    <Card   className=" bg-[#ffc6b3]">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Urgent</CardTitle>
                             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -378,7 +378,7 @@ export default function MyTasksPage() {
                 </div>
 
                 {/* Tasks Table */}
-                <Card>
+                <Card  >
                     <CardHeader>
                         <CardTitle>Assigned Tasks ({filteredOrders.length})</CardTitle>
                         <CardDescription>

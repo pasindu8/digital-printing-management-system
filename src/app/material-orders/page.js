@@ -256,7 +256,7 @@ export default function MaterialOrders() {
                   id="unit_price"
                   type="number"
                   step="0.01"
-                  min="0"
+                  min="1"
                   value={formData.unit_price}
                   onChange={(e) => setFormData({...formData, unit_price: Number(e.target.value)})}
                   required
@@ -267,6 +267,8 @@ export default function MaterialOrders() {
                 <Input
                   id="order_date"
                   type="date"
+                  min={new Date(Date.now()).toISOString().split('T')[0]}
+                  max={new Date(Date.now() + 31104000000).toISOString().split('T')[0]}
                   value={formData.order_date}
                   onChange={(e) => setFormData({...formData, order_date: e.target.value})}
                   required
@@ -277,6 +279,8 @@ export default function MaterialOrders() {
                 <Input
                   id="delivery_date"
                   type="date"
+                  min={new Date(Date.now()+ 172800000).toISOString().split('T')[0]}
+                  max={new Date(Date.now() + 7776000000).toISOString().split('T')[0]}
                   value={formData.delivery_date}
                   onChange={(e) => setFormData({...formData, delivery_date: e.target.value})}
                 />

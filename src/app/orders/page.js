@@ -66,6 +66,20 @@ const StatusBadge = ({ status }) => {
     return <Badge className={`border ${color}`}>{status}</Badge>;
 };
 
+// Helper function to get status order for tracking progress
+const getStatusOrder = (status) => {
+    const statusOrder = {
+        'Pending': 0,
+        'Confirmed': 1,
+        'In_Production': 2,
+        'Ready_for_Delivery': 3,
+        'In_Transit': 4,
+        'Delivered': 5,
+        'Completed': 6
+    };
+    return statusOrder[status] || 0;
+};
+
 export default function OrdersPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -222,6 +236,27 @@ export default function OrdersPage() {
         }
     };
 
+    const cancelOrder = async (order) => {
+        const confirmMessage = order.status === 'In_Production' || order.status === 'Ready_for_Delivery' ? 
+            'This order is already in production. Cancellation may incur charges. Are you sure you want to cancel?' :
+            'Are you sure you want to cancel this order?';
+            
+        if (window.confirm(confirmMessage)) {
+            try {
+                await api.post(`/orders/${order._id}/cancel`, {
+                    cancelledBy: currentUser.id,
+                    reason: 'Customer cancellation'
+                });
+                
+                await fetchOrders(); // Refresh the orders list
+                alert('Order cancelled successfully!');
+            } catch (err) {
+                console.error('Error cancelling order:', err);
+                alert('Failed to cancel order. Please contact support.');
+            }
+        }
+    };
+
     // Employee Assignment Functions
     const fetchAvailableEmployees = async () => {
         try {
@@ -287,6 +322,13 @@ export default function OrdersPage() {
 
     const unassignOrder = async (order) => {
         if (!order.assigned_employee) return;
+        
+        // Prevent unassigning orders that are in production or beyond
+        if (order.status === 'In_Production' || order.status === 'Ready_for_Delivery' || 
+            order.status === 'In_Transit' || order.status === 'Delivered' || order.status === 'Completed') {
+            alert('Cannot unassign employee from orders that are in production or completed stages.');
+            return;
+        }
 
         try {
             // Unassign order
@@ -539,6 +581,16 @@ export default function OrdersPage() {
                                                         <DropdownMenuItem onClick={() => openPaymentDialog(order)}>
                                                             💳 Buy - Upload Receipt
                                                         </DropdownMenuItem>
+                                                        
+                                                        {/* Allow customers to cancel orders (except delivered/completed) */}
+                                                        {order.status !== 'Delivered' && order.status !== 'Completed' && (
+                                                            <DropdownMenuItem 
+                                                                onClick={() => cancelOrder(order)}
+                                                                className="text-orange-600"
+                                                            >
+                                                                🚫 Cancel Order
+                                                            </DropdownMenuItem>
+                                                        )}
                                                     </>
                                                 )}
                                                 
@@ -553,18 +605,28 @@ export default function OrdersPage() {
                                                                 Assign to Employee
                                                             </DropdownMenuItem>
                                                         ) : (
-                                                            <DropdownMenuItem onClick={() => unassignOrder(order)}>
-                                                                Unassign Employee
-                                                            </DropdownMenuItem>
+                                                            /* Only show unassign if not in production or beyond */
+                                                            order.status !== 'In_Production' && 
+                                                            order.status !== 'Ready_for_Delivery' && 
+                                                            order.status !== 'In_Transit' && 
+                                                            order.status !== 'Delivered' && 
+                                                            order.status !== 'Completed' && (
+                                                                <DropdownMenuItem onClick={() => unassignOrder(order)}>
+                                                                    Unassign Employee
+                                                                </DropdownMenuItem>
+                                                            )
                                                         )}
                                                         
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem 
-                                                            onClick={() => deleteOrder(order._id)}
-                                                            className="text-red-600"
-                                                        >
-                                                            Delete
-                                                        </DropdownMenuItem>
+                                                        {/* Only allow deletion of orders not in production */}
+                                                        {(order.status === 'Pending' || order.status === 'Confirmed') && (
+                                                            <DropdownMenuItem 
+                                                                onClick={() => deleteOrder(order._id)}
+                                                                className="text-red-600"
+                                                            >
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        )}
                                                     </>
                                                 )}
                                             </DropdownMenuContent>
@@ -760,6 +822,117 @@ export default function OrdersPage() {
                     </Dialog>
                 )}
 
+                {/* Order Tracking Dialog */}
+                <Dialog open={isTrackingDialogOpen} onOpenChange={setIsTrackingDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Order Tracking</DialogTitle>
+                            <DialogDescription>
+                                Track the progress of your order
+                            </DialogDescription>
+                        </DialogHeader>
+                        {trackingData ? (
+                            <div className="space-y-6">
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <h4 className="font-medium text-blue-800 mb-2">Order Information</h4>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="text-blue-700">Order ID:</span>
+                                            <p className="font-medium text-blue-900">{trackingData.orderId}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Status:</span>
+                                            <div className="mt-1">
+                                                <StatusBadge status={trackingData.status} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Order Date:</span>
+                                            <p className="font-medium text-blue-900">
+                                                {new Date(trackingData.orderDate).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Expected Delivery:</span>
+                                            <p className="font-medium text-blue-900">
+                                                {trackingData.deliveryDate ? 
+                                                    new Date(trackingData.deliveryDate).toLocaleDateString() : 'TBD'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Progress Timeline */}
+                                <div className="space-y-4">
+                                    <h4 className="font-medium text-gray-800">Order Progress</h4>
+                                    <div className="space-y-3">
+                                        {[
+                                            { status: 'Pending', label: 'Order Placed', icon: '📝' },
+                                            { status: 'Confirmed', label: 'Order Confirmed', icon: '✅' },
+                                            { status: 'In_Production', label: 'In Production', icon: '🏭' },
+                                            { status: 'Ready_for_Delivery', label: 'Ready for Delivery', icon: '📦' },
+                                            { status: 'In_Transit', label: 'In Transit', icon: '🚚' },
+                                            { status: 'Delivered', label: 'Delivered', icon: '🎉' }
+                                        ].map((step, index) => {
+                                            const isCompleted = getStatusOrder(trackingData.status) >= getStatusOrder(step.status);
+                                            const isCurrent = trackingData.status === step.status;
+                                            
+                                            return (
+                                                <div key={step.status} className="flex items-center space-x-3">
+                                                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                                                        isCompleted ? 'bg-green-500 text-white' : 
+                                                        isCurrent ? 'bg-blue-500 text-white' : 
+                                                        'bg-gray-200 text-gray-500'
+                                                    }`}>
+                                                        {isCompleted ? '✓' : step.icon}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className={`text-sm font-medium ${
+                                                            isCurrent ? 'text-blue-600' : 
+                                                            isCompleted ? 'text-green-600' : 'text-gray-500'
+                                                        }`}>
+                                                            {step.label}
+                                                        </p>
+                                                    </div>
+                                                    {isCurrent && (
+                                                        <Badge variant="outline" className="text-xs">Current</Badge>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Additional Details */}
+                                {trackingData.assigned_employee && (
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <h4 className="font-medium text-gray-800 mb-2">Assigned Staff</h4>
+                                        <p className="text-sm text-gray-600">
+                                            {trackingData.assigned_employee.name}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {trackingData.notes && (
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <h4 className="font-medium text-gray-800 mb-2">Notes</h4>
+                                        <p className="text-sm text-gray-600">{trackingData.notes}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <p className="text-gray-500">Loading tracking information...</p>
+                            </div>
+                        )}
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsTrackingDialogOpen(false)}>
+                                Close
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>)
+
                 {/* Payment Receipt Upload Dialog */}
                 <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
                     <DialogContent className="sm:max-w-lg">
@@ -789,13 +962,18 @@ export default function OrdersPage() {
                                     <div className="grid grid-cols-1 gap-3">
                                         <div>
                                             <label className="text-xs font-medium text-yellow-700 block mb-1">Bank Name *</label>
-                                            <Input
-                                                placeholder="e.g., Commercial Bank, People's Bank"
+                                            <Select
                                                 value={paymentDetails.bank}
-                                                onChange={(e) => setPaymentDetails({...paymentDetails, bank: e.target.value})}
-                                                className="text-sm"
-                                                required
-                                            />
+                                                onValueChange={(val) => setPaymentDetails({ ...paymentDetails, bank: val })}
+                                            >
+                                                <SelectTrigger className="w-full text-sm ">
+                                                    <SelectValue placeholder="Select bank" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="BOC">Bank of Ceylon</SelectItem>
+                                                    <SelectItem value="PB">People's Bank</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-2">
@@ -818,6 +996,8 @@ export default function OrdersPage() {
                                                     value={paymentDetails.paymentDate}
                                                     onChange={(e) => setPaymentDetails({...paymentDetails, paymentDate: e.target.value})}
                                                     className="text-sm"
+                                                    min={new Date(Date.now()).toISOString().split('T')[0]}
+                                                    max={new Date(Date.now() + 1209600000).toISOString().split('T')[0]}
                                                     required
                                                 />
                                             </div>

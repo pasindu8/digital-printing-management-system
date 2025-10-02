@@ -99,7 +99,7 @@ export default function Login() {
             router.push('/dashboard');
             break;
           case 'Customer':
-            router.push('/delivery'); // Redirect customers to delivery page
+            router.push('/dashboard/customer'); // Redirect customers to customer dashboard
             break;
           case 'Delivery_Person':
             router.push('/delivery');
@@ -123,18 +123,18 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+    <div className="flex items-center justify-center min-h-screen bg-[#cccccc]">
       <Card className="w-full max-w-md shadow-lg rounded-2xl p-6">
         <div className="text-center mb-6">
           {/* Logo */}
           <div className="flex justify-center mb-3">
-            <div className="bg-blue-500 p-3 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
+            <div className="p-1 rounded-full">
+              <img
+                src="/logo.png"
+                alt="First Promovier Logo" className="rounded-full w-[90px] h-[90px]"></img>
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">The First Promovier</h1><br></br>
+          <h1 className="text-2xl font-bold text-[#049532]">First Promovier</h1><br></br>
           <p className="text-gray-800 font-bold mt-1">Sign in to your account</p>
           <p className="text-sm text-gray-800">Welcome back to the Print Management System</p>
         </div>
@@ -193,7 +193,7 @@ export default function Login() {
               <div className="flex-1 h-px bg-gray-200"></div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <button 
                 onClick={handleGoogleLogin}
                 disabled={loading || oauthLoading}
@@ -210,22 +210,7 @@ export default function Login() {
                   {oauthLoading === 'google' ? 'Connecting...' : 'Google'}
                 </span>
               </button>
-              <button 
-                onClick={handleGitHubLogin}
-                disabled={loading || oauthLoading}
-                className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-3 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#24292F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {oauthLoading === 'github' ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-                ) : (
-                  <svg aria-hidden="true" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.165 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.65.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.942.359.308.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" fillRule="evenodd"></path>
-                  </svg>
-                )}
-                <span className="text-sm font-semibold leading-6">
-                  {oauthLoading === 'github' ? 'Connecting...' : 'GitHub'}
-                </span>
-              </button>
+              
             </div>
           </div>
         </CardContent>
@@ -244,7 +229,7 @@ export default function Login() {
         </div>
 
         <div className="text-center text-xs text-gray-400 mt-6">
-          © 2024 The First Promovier. All rights reserved.
+          © 2025 The First Promovier. All rights reserved.
         </div>
       </Card>
     </div>

@@ -71,47 +71,8 @@ export function TopNav({ toggleSidebar, onCreateOrder, showCreateOrderButton = f
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0">
-                3
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium">Order #12345 completed</p>
-                <p className="text-xs text-muted-foreground">Ready for delivery</p>
-                <p className="text-xs text-muted-foreground">5 minutes ago</p>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium">New order received</p>
-                <p className="text-xs text-muted-foreground">Order #12346 from Acme Corp</p>
-                <p className="text-xs text-muted-foreground">15 minutes ago</p>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium">Low stock alert</p>
-                <p className="text-xs text-muted-foreground">Glossy paper (A4) is low in stock</p>
-                <p className="text-xs text-muted-foreground">1 hour ago</p>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-center">
-              <p className="text-sm text-blue-600 w-full">View all notifications</p>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {showCreateOrderButton && onCreateOrder && (
+        
+        {user?.role == 'Customer' && (
           <Button onClick={onCreateOrder} size="sm">
             <Plus className="mr-2 h-4 w-4" />
             Create New Order

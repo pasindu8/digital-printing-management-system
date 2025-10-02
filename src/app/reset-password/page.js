@@ -16,6 +16,9 @@ export default function ResetPassword() {
   const [token, setToken] = useState('');
   const [isValidToken, setIsValidToken] = useState(null);
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [email, setEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [hasToken, setHasToken] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -24,8 +27,10 @@ export default function ResetPassword() {
     if (tokenParam) {
       setToken(tokenParam);
       setIsValidToken(true); // We'll validate on submit
+      setHasToken(true);
     } else {
-      setIsValidToken(false);
+      setIsValidToken(true); // For code-based reset
+      setHasToken(false);
     }
   }, [searchParams]);
 
@@ -62,13 +67,22 @@ export default function ResetPassword() {
       return;
     }
 
+    if (!hasToken && (!email || !verificationCode)) {
+      alert('Please enter your email address and verification code');
+      return;
+    }
+
     setLoading(true);
     
     try {
+      const requestBody = hasToken 
+        ? { token, newPassword: password }
+        : { email, code: verificationCode, newPassword: password };
+
       const response = await fetch('http://localhost:5000/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword: password }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -178,6 +192,46 @@ export default function ResetPassword() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email and Code (for code-based reset) */}
+            {!hasToken && (
+              <>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-2">
+                    Verification Code
+                  </label>
+                  <Input
+                    id="verificationCode"
+                    type="text"
+                    placeholder="Enter 6-digit verification code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    required
+                    className="w-full text-center text-xl tracking-widest"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Check your email for the verification code we sent you.
+                  </p>
+                </div>
+              </>
+            )}
+
             {/* New Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
