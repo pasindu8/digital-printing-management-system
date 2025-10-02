@@ -562,16 +562,4 @@ NODE_ENV=production
 ✅ **Business Intelligence** - Advanced analytics & reporting  
 
 **Built for efficiency, designed for growth!** 🚀📊
-Visit: http://localhost:3000
-
-### Environment Assumptions
-Backend runs at `http://localhost:5000` with CORS enabled for `http://localhost:3000`.
-
-### Next Steps
-- Implement protected client components that validate token freshness
-- Add loading & error boundaries around data-heavy pages
-- Introduce design system tokens for consistent spacing/typography
-
-### Deployment
-Standard Next.js build (`npm run build` / `npm start`) or Vercel deployment. Ensure environment variables and backend URL are configured in production.
 
