@@ -54,11 +54,10 @@ async function handleOAuthUserCreation(userData) {
   return user;
 }
 
-// Google OAuth Strategy - Only configure if environment variables are set
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL) {
-  passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+// Google OAuth Strategy
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
@@ -97,17 +96,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.
     return done(error, null);
   }
 }));
-} else {
-  console.log('Google OAuth not configured - missing environment variables');
-}
 
-// GitHub OAuth Strategy - Only configure if environment variables are set
-if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET && process.env.GITHUB_CALLBACK_URL) {
-  passport.use(new GitHubStrategy({
-    clientID: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.GITHUB_CALLBACK_URL
-  }, async (accessToken, refreshToken, profile, done) => {
+// GitHub OAuth Strategy
+passport.use(new GitHubStrategy({
+  clientID: process.env.GITHUB_CLIENT_ID,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET,
+  callbackURL: process.env.GITHUB_CALLBACK_URL
+}, async (accessToken, refreshToken, profile, done) => {
   try {
     // Check if user already exists
     let user = await User.findOne({ githubId: profile.id });
@@ -145,9 +140,6 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET && process.
     return done(error, null);
   }
 }));
-} else {
-  console.log('GitHub OAuth not configured - missing environment variables');
-}
 
 passport.serializeUser((user, done) => {
   done(null, user._id);
