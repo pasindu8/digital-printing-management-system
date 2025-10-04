@@ -23,7 +23,6 @@ import {
   PieChart as PieChartIcon, 
   Loader2, 
   TrendingUp, 
-  TrendingDown,
   Users,
   Package,
   ShoppingCart,
@@ -39,8 +38,6 @@ import api from "../services/api";
 import {
   LineChart,
   Line,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   PieChart,

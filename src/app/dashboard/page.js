@@ -22,7 +22,6 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     // Financial Data
     financialMetrics: null,
@@ -57,7 +56,6 @@ export default function Dashboard() {
     workloadData: null,
     systemAlerts: []
   });
-  const [error, setError] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -91,7 +89,6 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      setError(null);
 
       // Fetch data from all modules in parallel
       const dataPromises = [
@@ -307,7 +304,6 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError('Failed to load some dashboard data. Please try refreshing.');
     } finally {
       setLoading(false);
     }
@@ -1012,133 +1008,6 @@ export default function Dashboard() {
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* Notification Summary */}
-        {notifications.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notification Summary
-              </CardTitle>
-              <CardDescription>Real-time business alerts requiring attention</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                {/* Critical Notifications */}
-                <Card className="border-red-200 bg-red-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-red-800">
-                      Critical Issues
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="text-2xl font-bold text-red-700 mb-2">
-                      {notifications.filter(n => n.priority === 'critical').length}
-                    </div>
-                    <div className="space-y-1">
-                      {notifications
-                        .filter(n => n.priority === 'critical')
-                        .slice(0, 2)
-                        .map((notif, index) => (
-                          <p key={index} className="text-xs text-red-600 truncate">
-                            {notif.title}
-                          </p>
-                        ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Warning Notifications */}
-                <Card className="border-orange-200 bg-orange-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-orange-800">
-                      Warnings
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="text-2xl font-bold text-orange-700 mb-2">
-                      {notifications.filter(n => n.priority === 'warning').length}
-                    </div>
-                    <div className="space-y-1">
-                      {notifications
-                        .filter(n => n.priority === 'warning')
-                        .slice(0, 2)
-                        .map((notif, index) => (
-                          <p key={index} className="text-xs text-orange-600 truncate">
-                            {notif.title}
-                          </p>
-                        ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Info Notifications */}
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-blue-800">
-                      Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="text-2xl font-bold text-blue-700 mb-2">
-                      {notifications.filter(n => n.priority === 'info').length}
-                    </div>
-                    <div className="space-y-1">
-                      {notifications
-                        .filter(n => n.priority === 'info')
-                        .slice(0, 2)
-                        .map((notif, index) => (
-                          <p key={index} className="text-xs text-blue-600 truncate">
-                            {notif.title}
-                          </p>
-                        ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              Quick Actions
-            </CardTitle>
-            <CardDescription>Frequently used actions and shortcuts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 md:grid-cols-6">
-              <Button variant="outline" size="sm" onClick={() => router.push('/orders')}>
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                New Order
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push('/customers')}>
-                <UserCheck className="h-4 w-4 mr-2" />
-                Add Customer
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push('/raw-materials')}>
-                <Package className="h-4 w-4 mr-2" />
-                Check Inventory
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push('/delivery')}>
-                <Truck className="h-4 w-4 mr-2" />
-                Schedule Delivery
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push('/finance')}>
-                <DollarSign className="h-4 w-4 mr-2" />
-                View Finances
-              </Button>
-              <Button variant="outline" size="sm" onClick={fetchDashboardData}>
-                <Activity className="h-4 w-4 mr-2" />
-                Refresh Data
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </MainLayout>
   );

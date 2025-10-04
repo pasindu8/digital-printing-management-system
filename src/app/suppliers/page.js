@@ -54,10 +54,8 @@ export default function Suppliers() {
     try {
       const response = await api.get('/suppliers');
       setSuppliers(response.data);
-      console.log('Fetched suppliers from backend:', response.data.length, 'items');
     } catch (error) {
       console.error('Error fetching suppliers:', error);
-      alert('Failed to fetch suppliers from backend. Please check if the backend server is running on http://localhost:5000');
     } finally {
       setLoading(false);
     }
@@ -122,7 +120,7 @@ export default function Suppliers() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
+            <Button className="bg-[#0066ff]" onClick={() => resetForm()}>
               <Plus className="h-4 w-4 mr-2" />
               Add Supplier
             </Button>
@@ -196,7 +194,7 @@ export default function Suppliers() {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">
-        <Card>
+        <Card className="bg-[#ace600]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -205,7 +203,7 @@ export default function Suppliers() {
             <div className="text-2xl font-bold">{suppliers.length}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#66ccff]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">With Email</CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
@@ -216,7 +214,7 @@ export default function Suppliers() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#cc66ff]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">With Phone</CardTitle>
             <Phone className="h-4 w-4 text-muted-foreground" />
@@ -240,14 +238,14 @@ export default function Suppliers() {
                   <p className="text-sm text-gray-600">{supplier.supplier_id}</p>
                 </div>
                 <div className="flex space-x-1">
-                  <Button
+                  <Button className="bg-[#33cc33]"
                     variant="outline"
                     size="sm"
                     onClick={() => handleEdit(supplier)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button
+                  <Button className="bg-[#ff0066]"
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(supplier.supplier_id)}

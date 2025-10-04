@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Filter, MoreHorizontal, Plus, Search, AlertTriangle } from "lucide-react";
+import { MoreHorizontal, Plus, Search, AlertTriangle } from "lucide-react";
 import api from '../services/api';
 import { formatCurrency } from "@/lib/currency";
 import { getCurrentUser } from "@/middleware/auth";
@@ -86,7 +86,6 @@ export default function OrdersPage() {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("all");
-    const [filterPriority, setFilterPriority] = useState("all");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
@@ -123,11 +122,6 @@ export default function OrdersPage() {
         const customerRole = user && user.role === 'Customer';
         setIsCustomer(customerRole);
         setShowCreateButton(!customerRole); // Hide admin create button for customers
-        
-        // Debug logging
-        console.log('Orders page - Current user:', user);
-        console.log('Orders page - User role:', user?.role);
-        console.log('Orders page - Is customer:', customerRole);
         
         fetchOrders();
     }, []);
@@ -260,9 +254,7 @@ export default function OrdersPage() {
     // Employee Assignment Functions
     const fetchAvailableEmployees = async () => {
         try {
-            console.log('Fetching available employees...');
             const response = await api.get('/hr/employees/available');
-            console.log('Available employees response:', response.data);
             setAvailableEmployees(response.data);
         } catch (err) {
             console.error('Error fetching employees:', err);
@@ -290,10 +282,6 @@ export default function OrdersPage() {
         setAssignmentLoading(true);
         try {
             const employee = availableEmployees.find(emp => emp.employeeId === selectedEmployee);
-            
-            console.log('Order to assign:', orderToAssign);
-            console.log('Employee:', employee);
-            console.log('Order ID being used:', orderToAssign._id);
             
             // Assign order to employee
             await api.post(`/orders/${orderToAssign._id}/assign`, {
@@ -410,8 +398,7 @@ export default function OrdersPage() {
         const matchesSearch = order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             order.customer_name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === "all" || order.status === filterStatus;
-        const matchesPriority = filterPriority === "all" || order.priority === filterPriority;
-        return matchesSearch && matchesStatus && matchesPriority;
+        return matchesSearch && matchesStatus;
     });
 
     // Update isCustomer and showCreateButton based on currentUser

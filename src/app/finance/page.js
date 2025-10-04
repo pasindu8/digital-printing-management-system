@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
     Table,
     TableBody,
@@ -11,30 +10,14 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, TrendingUp, TrendingDown, Plus, Receipt, CreditCard, FileText } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText } from "lucide-react";
 import api from '../services/api';
 
 export default function FinancePage() {
     const [expenses, setExpenses] = useState([]);
-    const [invoices, setInvoices] = useState([]);
     const [orders, setOrders] = useState([]);
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -48,15 +31,13 @@ export default function FinancePage() {
         try {
             setLoading(true);
             
-            // Fetch expenses, invoices, and orders
-            const [expensesRes, invoicesRes, ordersRes] = await Promise.all([
+            // Fetch expenses and orders
+            const [expensesRes, ordersRes] = await Promise.all([
                 api.get('/finance/expenses'),
-                api.get('/finance/invoices'),
                 api.get('/orders')
             ]);
             
             setExpenses(expensesRes.data || []);
-            setInvoices(invoicesRes.data || []);
             setOrders(ordersRes.data || []);
             
             // Try to fetch summary, but don't fail if it doesn't work
@@ -77,28 +58,6 @@ export default function FinancePage() {
         } catch (err) {
             console.error('Error fetching finance data:', err);
             setError('Failed to load finance data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const generateInvoice = async (orderId) => {
-        try {
-            setLoading(true);
-            const response = await api.post(`/finance/generate-invoice/${orderId}`);
-            
-            // Show success message with invoice details
-            alert(`Invoice generated successfully!\n\nInvoice ID: ${response.data.invoiceId}\nCustomer: ${response.data.customer.name}\nTotal: Rs. ${response.data.total.toFixed(2)}\nStatus: ${response.data.status}`);
-            
-            // Refresh the finance data to show any new expenses that might have been created
-            await fetchFinanceData();
-            
-        } catch (err) {
-            console.error('Error generating invoice:', err);
-            
-            // Provide specific error messages
-            const errorMessage = err.response?.data?.message || 'Failed to generate invoice';
-            alert(`Error: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
@@ -152,7 +111,11 @@ export default function FinancePage() {
                                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">Rs. {summary.revenue?.total?.toFixed(2) || '0.00'}</div>
+                                <div className="text-2xl font-bold">Rs. {orders
+                                            .filter(order => order.status === 'Completed')
+                                            .reduce((sum, order) => sum + (order.total || 0), 0)
+                                            .toFixed(2)
+                                            }</div>
                                 <p className="text-xs text-muted-foreground">
                                     From completed orders
                                 </p>
@@ -165,7 +128,10 @@ export default function FinancePage() {
                                 <TrendingDown className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">Rs. {summary.expenses?.total?.toFixed(2) || '0.00'}</div>
+                                <div className="text-2xl font-bold">Rs. {expenses
+                                    .reduce((sum, expense) => sum + (expense.amount || 0), 0)
+                                    .toFixed(2)
+                                }</div>
                                 <p className="text-xs text-muted-foreground">
                                     Operational expenses
                                 </p>
@@ -178,11 +144,22 @@ export default function FinancePage() {
                                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className={`text-2xl font-bold ${summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    ${summary.netProfit?.toFixed(2) || '0.00'}
-                                </div>
+                                {(() => {
+                                    const totalRevenue = orders
+                                        .filter(order => order.status === 'Completed')
+                                        .reduce((sum, order) => sum + (order.total || 0), 0);
+                                    const totalExpenses = expenses
+                                        .reduce((sum, expense) => sum + (expense.amount || 0), 0);
+                                    const netProfit = totalRevenue - totalExpenses;
+                                    
+                                    return (
+                                        <div className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            Rs. {netProfit.toFixed(2)}
+                                        </div>
+                                    );
+                                })()}
                                 <p className="text-xs text-muted-foreground">
-                                    This month
+                                    Revenue minus expenses
                                 </p>
                             </CardContent>
                         </Card>
@@ -193,12 +170,21 @@ export default function FinancePage() {
                                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">
-                                    {summary.revenue?.total > 0 
-                                        ? ((summary.netProfit / summary.revenue.total) * 100).toFixed(1)
-                                        : '0.0'
-                                    }%
-                                </div>
+                                {(() => {
+                                    const totalRevenue = orders
+                                        .filter(order => order.status === 'Completed')
+                                        .reduce((sum, order) => sum + (order.total || 0), 0);
+                                    const totalExpenses = expenses
+                                        .reduce((sum, expense) => sum + (expense.amount || 0), 0);
+                                    const netProfit = totalRevenue - totalExpenses;
+                                    const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100) : 0;
+                                    
+                                    return (
+                                        <div className="text-2xl font-bold">
+                                            {profitMargin.toFixed(1)}%
+                                        </div>
+                                    );
+                                })()}
                                 <p className="text-xs text-muted-foreground">
                                     Profit percentage
                                 </p>
@@ -211,7 +197,6 @@ export default function FinancePage() {
                 <Tabs defaultValue="expenses" className="space-y-4">
                     <TabsList>
                         <TabsTrigger value="expenses">Expenses</TabsTrigger>
-                        <TabsTrigger value="invoices">Invoices</TabsTrigger>
                         <TabsTrigger value="revenue">Revenue</TabsTrigger>
                     </TabsList>
 
@@ -256,158 +241,13 @@ export default function FinancePage() {
                         </div>
                     </TabsContent>
 
-                    {/* Invoices Tab */}
-                    <TabsContent value="invoices" className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-semibold">Invoice Management</h2>
-                        </div>
-                        
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Auto-Generate Invoices</CardTitle>
-                                <CardDescription>
-                                    Automatically generate invoices for completed orders
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    Invoices are automatically generated when orders are marked as completed.
-                                    You can also manually generate invoices for specific orders.
-                                </p>
-                                <Button onClick={() => generateInvoice('ORD-001')}>
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    Generate Sample Invoice
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {/* Generated Invoices List */}
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Invoice ID</TableHead>
-                                        <TableHead>Order ID</TableHead>
-                                        <TableHead>Customer</TableHead>
-                                        <TableHead>Subtotal</TableHead>
-                                        <TableHead>Tax</TableHead>
-                                        <TableHead>Total</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Due Date</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {invoices.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
-                                                No invoices generated yet. Click "Generate Sample Invoice" to create one.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        invoices.map((invoice) => (
-                                            <TableRow key={invoice._id}>
-                                                <TableCell className="font-medium">{invoice.invoiceId}</TableCell>
-                                                <TableCell>{invoice.orderId}</TableCell>
-                                                <TableCell>{invoice.customer.name}</TableCell>
-                                                <TableCell>Rs. {invoice.subtotal.toFixed(2)}</TableCell>
-                                                <TableCell>Rs. {invoice.tax.toFixed(2)}</TableCell>
-                                                <TableCell className="font-medium">Rs. {invoice.total.toFixed(2)}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant={invoice.status === 'Paid' ? 'default' : 'secondary'}>
-                                                        {invoice.status}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {new Date(invoice.dueDate).toLocaleDateString()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </TabsContent>
-
+                   
                     {/* Revenue Tab */}
                     <TabsContent value="revenue" className="space-y-4">
                         <div className="flex justify-between items-center">
                             <h2 className="text-xl font-semibold">Revenue Management</h2>
                         </div>
                         
-                        {/* Revenue Summary Cards */}
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">
-                                        Rs. {orders
-                                            .filter(order => order.status === 'Completed')
-                                            .reduce((sum, order) => sum + (order.total || 0), 0)
-                                            .toFixed(2)
-                                        }
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        From completed orders
-                                    </p>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Pending Revenue</CardTitle>
-                                    <Receipt className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">
-                                        Rs. {orders
-                                            .filter(order => order.status === 'Pending' || order.status === 'In Progress')
-                                            .reduce((sum, order) => sum + (order.total || 0), 0)
-                                            .toFixed(2)
-                                        }
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        From pending orders
-                                    </p>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
-                                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">
-                                        Rs. {orders.length > 0 
-                                            ? (orders.reduce((sum, order) => sum + (order.total || 0), 0) / orders.length).toFixed(2)
-                                            : '0.00'
-                                        }
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        All orders average
-                                    </p>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold">
-                                        {orders.length}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        {orders.filter(order => order.status === 'Completed').length} completed
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </div>
-
                         {/* Revenue by Customer */}
                         <Card>
                             <CardHeader>

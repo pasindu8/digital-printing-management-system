@@ -22,9 +22,13 @@ export default function RawMaterials() {
   const [formData, setFormData] = useState({
     material_name: '',
     material_type: '',
+    category: '',
     unit_of_measurement: '',
     current_stock: 0,
-    unit_cost: 0
+    minimum_stock_level: 10,
+    unit_cost: 0,
+    supplier_name: '',
+    restock_threshold: 10
   });
 
   // Check authentication
@@ -55,7 +59,6 @@ export default function RawMaterials() {
     try {
       const response = await api.get('/raw-materials');
       setMaterials(response.data);
-      console.log('Fetched materials from backend:', response.data.length, 'items');
     } catch (error) {
       console.error('Error fetching materials:', error);
       // Show error message to user
@@ -96,20 +99,15 @@ export default function RawMaterials() {
     setFormData({
       material_name: material.material_name,
       material_type: material.material_type,
+      category: material.category || '',
       unit_of_measurement: material.unit_of_measurement,
       current_stock: material.current_stock,
-      unit_cost: material.unit_cost || 0
+      minimum_stock_level: material.minimum_stock_level || 10,
+      unit_cost: material.unit_cost || 0,
+      supplier_name: material.supplier_name || '',
+      restock_threshold: material.restock_threshold || 10
     });
     setIsDialogOpen(true);
-  };
-
-  const adjustStock = async (materialId, delta) => {
-    try {
-      await api.patch(`/raw-materials/${materialId}/stock`, { delta });
-      fetchMaterials();
-    } catch (error) {
-      console.error('Error adjusting stock:', error);
-    }
   };
 
   const updateUnitPrice = async (materialId, unitCost) => {
@@ -126,19 +124,23 @@ export default function RawMaterials() {
     setFormData({
       material_name: '',
       material_type: '',
+      category: '',
       unit_of_measurement: '',
       current_stock: 0,
-      unit_cost: 0
+      minimum_stock_level: 10,
+      unit_cost: 0,
+      supplier_name: '',
+      restock_threshold: 10
     });
     setEditingMaterial(null);
     setIsDialogOpen(false);
   };
 
   const getStockStatus = (stock) => {
-    if (stock === 0) return { color: 'destructive', text: 'Out of Stock' };
-    if (stock < 50) return { color: 'destructive', text: 'Low Stock' };
-    if (stock < 100) return { color: 'warning', text: 'Medium Stock' };
-    return { color: 'success', text: 'In Stock' };
+    if (stock === 0) return { color: 'destructive', text: 'Out of Stock', bgColor: '#ff0000' };
+    if (stock < 50) return { color: 'destructive', text: 'Low Stock', bgColor: '#ff9900' };
+    if (stock < 100) return { color: 'warning', text: 'Medium Stock', bgColor: '#ace600' };
+    return { color: 'success', text: 'In Stock', bgColor: '#33cc33' };
   };
 
   if (loading) return <MainLayout><div>Loading...</div></MainLayout>;
@@ -152,7 +154,7 @@ export default function RawMaterials() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
+            <Button className="bg-[#33cc33]" onClick={() => resetForm()}>
               <Plus className="h-4 w-4 mr-2" />
               Add Material
             </Button>
@@ -183,36 +185,91 @@ export default function RawMaterials() {
                 />
               </div>
               <div>
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  <option value="Ink">Ink</option>
+                  <option value="Paper">Paper</option>
+                  <option value="Adhesive">Adhesive</option>
+                  <option value="Chemical">Chemical</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Packaging">Packaging</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
                 <Label htmlFor="unit_of_measurement">Unit of Measurement</Label>
                 <Input
                   id="unit_of_measurement"
                   value={formData.unit_of_measurement}
                   onChange={(e) => setFormData({...formData, unit_of_measurement: e.target.value})}
+                  placeholder="e.g., kg, liters, meters, pieces"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="current_stock">Current Stock</Label>
+                <Label htmlFor="supplier_name">Supplier Name</Label>
                 <Input
-                  id="current_stock"
-                  type="number"
-                  min="0"
-                  value={formData.current_stock}
-                  onChange={(e) => setFormData({...formData, current_stock: Number(e.target.value)})}
+                  id="supplier_name"
+                  value={formData.supplier_name}
+                  onChange={(e) => setFormData({...formData, supplier_name: e.target.value})}
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="unit_cost">Unit Cost (Rs)</Label>
-                <Input
-                  id="unit_cost"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.unit_cost}
-                  onChange={(e) => setFormData({...formData, unit_cost: Number(e.target.value)})}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="current_stock">Current Stock</Label>
+                  <Input
+                    id="current_stock"
+                    type="number"
+                    min="0"
+                    value={formData.current_stock}
+                    onChange={(e) => setFormData({...formData, current_stock: Number(e.target.value)})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="minimum_stock_level">Minimum Stock Level</Label>
+                  <Input
+                    id="minimum_stock_level"
+                    type="number"
+                    min="0"
+                    value={formData.minimum_stock_level}
+                    onChange={(e) => setFormData({...formData, minimum_stock_level: Number(e.target.value)})}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="unit_cost">Unit Cost (Rs)</Label>
+                  <Input
+                    id="unit_cost"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.unit_cost}
+                    onChange={(e) => setFormData({...formData, unit_cost: Number(e.target.value)})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="restock_threshold">Restock Threshold</Label>
+                  <Input
+                    id="restock_threshold"
+                    type="number"
+                    min="0"
+                    value={formData.restock_threshold}
+                    onChange={(e) => setFormData({...formData, restock_threshold: Number(e.target.value)})}
+                    required
+                  />
+                </div>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={resetForm}>
@@ -242,7 +299,7 @@ export default function RawMaterials() {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card>
+        <Card className="bg-[#99ff99]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Materials</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -251,7 +308,7 @@ export default function RawMaterials() {
             <div className="text-2xl font-bold">{materials.length}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#99ffff]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Value</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -262,7 +319,7 @@ export default function RawMaterials() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#ffb84d]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -273,7 +330,7 @@ export default function RawMaterials() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#ff471a]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Out of Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -299,14 +356,14 @@ export default function RawMaterials() {
                     <p className="text-sm text-gray-600">{material.material_id}</p>
                   </div>
                   <div className="flex space-x-1">
-                    <Button
+                    <Button className="bg-[#29a329] text-white"
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(material)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
+                    <Button className="bg-[#ff0000] text-white"
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(material.material_id)}
@@ -330,7 +387,10 @@ export default function RawMaterials() {
                     <span className="text-sm text-gray-600">Stock:</span>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium">{material.current_stock}</span>
-                      <Badge variant={stockStatus.color === 'success' ? 'default' : 'destructive'}>
+                      <Badge 
+                        variant={stockStatus.color === 'success' ? 'default' : 'destructive'} 
+                        style={{ backgroundColor: stockStatus.bgColor, color: 'white', border: 'none' }}
+                      > 
                         {stockStatus.text}
                       </Badge>
                     </div>
@@ -338,6 +398,7 @@ export default function RawMaterials() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Unit Price:</span>
                     <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">Rs</span>
                       <Input
                         type="number"
                         min="0"
@@ -351,7 +412,7 @@ export default function RawMaterials() {
                         }}
                         className="w-20 h-8 text-xs"
                       />
-                      <span className="text-xs text-gray-500">Rs</span>
+                      
                     </div>
                   </div>
                 </div>

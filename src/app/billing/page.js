@@ -4,37 +4,10 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import api from "@/app/services/api";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { CreditCard, DollarSign, Download, MoreHorizontal, Receipt, Search, Eye, Mail, Trash2 } from "lucide-react";
@@ -71,7 +44,6 @@ export default function Billing() {
   const [searchQuery, setSearchQuery] = useState("");
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentTab, setCurrentTab] = useState("all-invoices");
   
   // Receipt review states
   const [pendingReceipts, setPendingReceipts] = useState([]);
@@ -125,9 +97,7 @@ export default function Billing() {
   const fetchPendingReceipts = async () => {
     try {
       setReceiptsLoading(true);
-      console.log('Fetching pending receipts...');
       const response = await api.get('/orders?has_receipt=true&verified=false');
-      console.log('Pending receipts response:', response.data);
       setPendingReceipts(response.data);
     } catch (error) {
       console.error('Error fetching pending receipts:', error);
@@ -142,7 +112,7 @@ export default function Billing() {
       await api.post(`/orders/${orderId}/approve-receipt`);
       await fetchPendingReceipts();
       setIsReceiptDialogOpen(false);
-      alert('Receipt approved successfully! Order status changed to Confirmed and is now visible in Orders page.');
+      alert('Receipt approved successfully!');
     } catch (error) {
       console.error('Error approving receipt:', error);
       alert('Failed to approve receipt. Please try again.');
@@ -162,109 +132,7 @@ export default function Billing() {
     }
   };
 
-  // Mark invoice as paid
-  const markAsPaid = async (invoiceId, paymentMethod = 'Credit Card') => {
-    try {
-      await api.patch(`/billing/${invoiceId}/pay`, {
-        paymentMethod,
-        paidDate: new Date()
-      });
-      fetchInvoices();
-      fetchSummary();
-    } catch (error) {
-      console.error('Error marking invoice as paid:', error);
-    }
-  };
-
-  // Download PDF invoice
-  const downloadPDF = async (invoice) => {
-    try {
-      console.log('Downloading PDF for invoice:', invoice.invoiceId);
-      
-      // Create a simple invoice HTML for PDF generation
-      const invoiceHTML = `
-        <html>
-          <head>
-            <title>Invoice ${invoice.invoiceId}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 40px; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .invoice-info { margin-bottom: 30px; }
-              .customer-info { margin-bottom: 30px; }
-              .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-              .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              .items-table th { background-color: #f2f2f2; }
-              .total { text-align: right; font-weight: bold; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>INVOICE</h1>
-              <h2>${invoice.invoiceId}</h2>
-            </div>
-            
-            <div class="invoice-info">
-              <p><strong>Invoice Date:</strong> ${new Date(invoice.issueDate).toLocaleDateString()}</p>
-              <p><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}</p>
-              <p><strong>Status:</strong> ${invoice.status.toUpperCase()}</p>
-            </div>
-            
-            <div class="customer-info">
-              <h3>Bill To:</h3>
-              <p><strong>${invoice.customer?.name || 'N/A'}</strong></p>
-              <p>${invoice.customer?.email || ''}</p>
-            </div>
-            
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Quantity</th>
-                  <th>Unit Price</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${invoice.items && invoice.items.length > 0 ? 
-                  invoice.items.map(item => `
-                    <tr>
-                      <td>${item.product || item.item_name || 'Service'}</td>
-                      <td>${item.quantity || 1}</td>
-                      <td>Rs. ${(item.unit_price || item.price || 0).toFixed(2)}</td>
-                      <td>Rs. ${((item.quantity || 1) * (item.unit_price || item.price || 0)).toFixed(2)}</td>
-                    </tr>
-                  `).join('') 
-                  : '<tr><td colspan="4">Order services</td></tr>'
-                }
-              </tbody>
-            </table>
-            
-            <div class="total">
-              <h3>Total Amount: Rs. ${invoice.total?.toFixed(2) || '0.00'}</h3>
-            </div>
-            
-            ${invoice.notes ? `<div style="margin-top: 30px;"><p><strong>Notes:</strong> ${invoice.notes}</p></div>` : ''}
-          </body>
-        </html>
-      `;
-      
-      // Create and download the PDF
-      const blob = new Blob([invoiceHTML], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `invoice-${invoice.invoiceId}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      alert('Invoice downloaded successfully!');
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      alert('Failed to download invoice. Please try again.');
-    }
-  };
+  // download PDF 25
 
   // View invoice details
   const viewDetails = (invoice) => {
@@ -288,9 +156,7 @@ export default function Billing() {
   const submitPaymentRecord = async () => {
     try {
       if (!selectedInvoice) return;
-      
-      // Since invoices are based on orders, we need to update the order's payment status
-      await api.post(`/orders/${selectedInvoice._id}/record-payment`, {
+        await api.post(`/orders/${selectedInvoice._id}/record-payment`, {
         amount: paymentData.amount,
         paymentMethod: paymentData.paymentMethod,
         paymentDate: paymentData.paymentDate,
@@ -306,12 +172,9 @@ export default function Billing() {
       alert('Failed to record payment. Please try again.');
     }
   };
-
   // Send reminder
   const sendReminder = async (invoice) => {
     try {
-      console.log('Sending reminder for invoice:', invoice.invoiceId);
-      
       await api.post(`/orders/${invoice._id}/send-reminder`, {
         customerEmail: invoice.customer?.email,
         invoiceId: invoice.invoiceId,
@@ -346,339 +209,12 @@ export default function Billing() {
     }
   };
 
-  // Update invoice status
-  const updateStatus = async (invoiceId, status) => {
-    try {
-      await api.patch(`/billing/${invoiceId}/status`, { status });
-      fetchInvoices();
-      fetchSummary();
-    } catch (error) {
-      console.error('Error updating invoice status:', error);
-    }
-  };
-
-  // Export invoices to CSV
-  const exportInvoices = () => {
-    try {
-      const currentInvoices = getFilteredInvoices();
-      
-      // Create CSV headers
-      const headers = ['Invoice ID', 'Customer Name', 'Customer Email', 'Issue Date', 'Due Date', 'Status', 'Amount', 'Payment Method'];
-      
-      // Create CSV rows
-      const csvContent = [
-        headers.join(','),
-        ...currentInvoices.map(invoice => [
-          invoice.invoiceId,
-          `"${invoice.customer?.name || 'N/A'}"`,
-          invoice.customer?.email || 'N/A',
-          new Date(invoice.issueDate).toLocaleDateString(),
-          new Date(invoice.dueDate).toLocaleDateString(),
-          invoice.status,
-          invoice.total?.toFixed(2) || '0.00',
-          invoice.paymentMethod || 'N/A'
-        ].join(','))
-      ].join('\n');
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `invoices-${currentTab}-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      alert('Invoices exported successfully!');
-    } catch (error) {
-      console.error('Error exporting invoices:', error);
-      alert('Failed to export invoices. Please try again.');
-    }
-  };
-
-  // Generate financial statement
-  const generateStatement = () => {
-    try {
-      const currentInvoices = getFilteredInvoices();
-      
-      // Calculate totals
-      const totalAmount = currentInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-      const paidAmount = currentInvoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (inv.total || 0), 0);
-      const pendingAmount = currentInvoices.filter(inv => inv.status === 'pending').reduce((sum, inv) => sum + (inv.total || 0), 0);
-      const overdueAmount = currentInvoices.filter(inv => inv.status === 'overdue').reduce((sum, inv) => sum + (inv.total || 0), 0);
-      
-      // Create statement HTML
-      const statementHTML = `
-        <html>
-          <head>
-            <title>Financial Statement - ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 40px; }
-              .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-              .summary { margin-bottom: 30px; }
-              .summary-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
-              .summary-item.total { font-weight: bold; font-size: 1.2em; border-top: 2px solid #333; }
-              .invoices-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-              .invoices-table th, .invoices-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              .invoices-table th { background-color: #f2f2f2; }
-              .status-paid { color: green; font-weight: bold; }
-              .status-overdue { color: red; font-weight: bold; }
-              .status-pending { color: orange; font-weight: bold; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>FINANCIAL STATEMENT</h1>
-              <h2>${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)} Invoices</h2>
-              <p>Generated on: ${new Date().toLocaleDateString()}</p>
-            </div>
-            
-            <div class="summary">
-              <h3>Summary</h3>
-              <div class="summary-item">
-                <span>Total Invoices:</span>
-                <span>${currentInvoices.length}</span>
-              </div>
-              <div class="summary-item">
-                <span>Total Amount:</span>
-                <span>Rs. ${totalAmount.toFixed(2)}</span>
-              </div>
-              <div class="summary-item">
-                <span>Paid Amount:</span>
-                <span>Rs. ${paidAmount.toFixed(2)}</span>
-              </div>
-              <div class="summary-item">
-                <span>Pending Amount:</span>
-                <span>Rs. ${pendingAmount.toFixed(2)}</span>
-              </div>
-              <div class="summary-item">
-                <span>Overdue Amount:</span>
-                <span>Rs. ${overdueAmount.toFixed(2)}</span>
-              </div>
-              <div class="summary-item total">
-                <span>Outstanding Balance:</span>
-                <span>Rs. ${(pendingAmount + overdueAmount).toFixed(2)}</span>
-              </div>
-            </div>
-            
-            <table class="invoices-table">
-              <thead>
-                <tr>
-                  <th>Invoice ID</th>
-                  <th>Customer</th>
-                  <th>Issue Date</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${currentInvoices.map(invoice => `
-                  <tr>
-                    <td>${invoice.invoiceId}</td>
-                    <td>${invoice.customer?.name || 'N/A'}</td>
-                    <td>${new Date(invoice.issueDate).toLocaleDateString()}</td>
-                    <td>${new Date(invoice.dueDate).toLocaleDateString()}</td>
-                    <td class="status-${invoice.status}">${invoice.status.toUpperCase()}</td>
-                    <td>Rs. ${(invoice.total || 0).toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
-      `;
-      
-      // Create and download file
-      const blob = new Blob([statementHTML], { type: 'text/html' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `financial-statement-${currentTab}-${new Date().toISOString().split('T')[0]}.html`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      alert('Financial statement generated successfully!');
-    } catch (error) {
-      console.error('Error generating statement:', error);
-      alert('Failed to generate statement. Please try again.');
-    }
-  };
-
+// 24 generateStatement function
   useEffect(() => {
     fetchInvoices();
     fetchSummary();
     fetchPendingReceipts();
   }, []);
-
-  // Handle tab changes and fetch appropriate data
-  const handleTabChange = (tabValue) => {
-    setCurrentTab(tabValue);
-    if (tabValue === 'receipt-review') {
-      fetchPendingReceipts();
-    } else if (tabValue === 'all-invoices') {
-      fetchInvoices();
-    } else {
-      // For specific status tabs, fetch filtered data
-      fetchInvoices(tabValue);
-    }
-  };
-
-  // Debug logging for receipt data
-  useEffect(() => {
-    console.log('Receipt Review Tab - pendingReceipts:', pendingReceipts, 'receiptsLoading:', receiptsLoading);
-  }, [pendingReceipts, receiptsLoading]);
-
-  // Reusable invoice table component
-  const InvoiceTable = ({ invoices, loading, showSearch = true }) => (
-    <div className="space-y-4">
-      {showSearch && (
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              type="search" 
-              placeholder="Search invoices..." 
-              className="pl-8 bg-white" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={exportInvoices}>
-              Export
-            </Button>
-            <Button variant="outline" onClick={generateStatement}>
-              Generate Statement
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Invoice #</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10">
-                  Loading invoices...
-                </TableCell>
-              </TableRow>
-            ) : invoices.length > 0 ? (
-              invoices.map((invoice) => (
-                <TableRow key={invoice._id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{invoice.invoiceId}</div>
-                      <div className="text-sm text-muted-foreground">{invoice.orderId}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{invoice.customer?.name}</div>
-                      <div className="text-sm text-muted-foreground">{invoice.customer?.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusBadge(invoice.status)}>
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(invoice.total)}
-                  </TableCell>
-                  <TableCell>
-                    {invoice.paymentMethod ? (
-                      <div>
-                        <div>{invoice.paymentMethod}</div>
-                        {invoice.paidDate && (
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(invoice.paidDate).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Pending</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => downloadPDF(invoice)}>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => viewDetails(invoice)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        {invoice.status !== "paid" && (
-                          <DropdownMenuItem onClick={() => recordPayment(invoice)}>
-                            <DollarSign className="h-4 w-4 mr-2" />
-                            Record Payment
-                          </DropdownMenuItem>
-                        )}
-                        {invoice.status === "draft" && (
-                          <DropdownMenuItem onClick={() => updateStatus(invoice._id, "sent")}>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send Invoice
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => sendReminder(invoice)}>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Send Reminder
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-red-600"
-                          onClick={() => deleteInvoice(invoice)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Invoice
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                  No invoices found matching your criteria
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
 
   // Filter invoices based on search query
   const filteredInvoices = invoices.filter((invoice) => {
@@ -688,37 +224,6 @@ export default function Billing() {
       invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
-
-  // Get filtered invoices based on current tab and search
-  const getFilteredInvoices = () => {
-    let tabFilteredInvoices = invoices;
-    
-    // Filter by tab first
-    switch (currentTab) {
-      case 'paid':
-        tabFilteredInvoices = invoices.filter(invoice => invoice.status === 'paid');
-        break;
-      case 'pending':
-        tabFilteredInvoices = invoices.filter(invoice => invoice.status === 'pending');
-        break;
-      case 'overdue':
-        tabFilteredInvoices = invoices.filter(invoice => invoice.status === 'overdue');
-        break;
-      case 'all-invoices':
-      default:
-        tabFilteredInvoices = invoices;
-        break;
-    }
-    
-    // Then filter by search query
-    return tabFilteredInvoices.filter((invoice) => {
-      return (
-        invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    });
-  };
 
   // Calculate totals from actual data
   const totalRevenue = summary.totalAmount || 0;
@@ -776,7 +281,7 @@ export default function Billing() {
         </Card>
       </div>
 
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-4">
+      <Tabs defaultValue="all-invoices" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all-invoices">All Invoices</TabsTrigger>
           <TabsTrigger value="paid">Paid</TabsTrigger>
@@ -790,25 +295,10 @@ export default function Billing() {
           <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
-                placeholder="Search invoices..." 
-                className="pl-8 bg-white" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <Input type="search" placeholder="Search invoices..." className="pl-8 bg-white" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
             </div>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={exportInvoices}>
-                Export
-              </Button>
-              <Button variant="outline" onClick={generateStatement}>
-                Generate Statement
-              </Button>
-            </div>
+            {/* Export button 23 */}
           </div>
-
           {/* Invoices Table */}
           <div className="rounded-md border">
             <Table>
@@ -878,10 +368,6 @@ export default function Billing() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => downloadPDF(invoice)}>
-                              <Download className="h-4 w-4 mr-2" />
-                              Download PDF
-                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => viewDetails(invoice)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
@@ -892,21 +378,12 @@ export default function Billing() {
                                 Record Payment
                               </DropdownMenuItem>
                             )}
-                            {invoice.status === "Draft" && (
-                              <DropdownMenuItem onClick={() => updateStatus(invoice._id, "Sent")}>
-                                <Mail className="h-4 w-4 mr-2" />
-                                Send Invoice
-                              </DropdownMenuItem>
-                            )}
                             <DropdownMenuItem onClick={() => sendReminder(invoice)}>
                               <Mail className="h-4 w-4 mr-2" />
                               Send Reminder
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => deleteInvoice(invoice)}
-                            >
+                            <DropdownMenuItem className="text-red-600" onClick={() => deleteInvoice(invoice)}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete Invoice
                             </DropdownMenuItem>
@@ -928,42 +405,320 @@ export default function Billing() {
         </TabsContent>
         
         <TabsContent value="paid" className="space-y-4">
-          <InvoiceTable 
-            invoices={invoices.filter(invoice => 
-              invoice.status === 'paid' && 
-              (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-            )} 
-            loading={loading} 
-            showSearch={false} 
-          />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10">
+                      Loading invoices...
+                    </TableCell>
+                  </TableRow>
+                ) : invoices.filter(invoice => 
+                    invoice.status === 'paid' && 
+                    (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  ).length > 0 ? (
+                  invoices.filter(invoice => 
+                    invoice.status === 'paid' && 
+                    (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  ).map((invoice) => (
+                    <TableRow key={invoice._id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{invoice.invoiceId}</div>
+                          <div className="text-sm text-muted-foreground">{invoice.orderId}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{invoice.customer?.name}</div>
+                          <div className="text-sm text-muted-foreground">{invoice.customer?.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadge(invoice.status)}>
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(invoice.total)}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.paymentMethod ? (
+                          <div>
+                            <div>{invoice.paymentMethod}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {invoice.paidDate ? new Date(invoice.paidDate).toLocaleDateString() : '-'}
+                            </div>
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => viewDetails(invoice)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                      No paid invoices found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
         
         <TabsContent value="pending" className="space-y-4">
-          <InvoiceTable 
-            invoices={invoices.filter(invoice => 
-              invoice.status === 'pending' && 
-              (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-            )} 
-            loading={loading} 
-            showSearch={false} 
-          />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10">
+                      Loading invoices...
+                    </TableCell>
+                  </TableRow>
+                ) : invoices.filter(invoice => 
+                    invoice.status === 'pending' && 
+                    (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  ).length > 0 ? (
+                  invoices.filter(invoice => 
+                    invoice.status === 'pending' && 
+                    (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  ).map((invoice) => (
+                    <TableRow key={invoice._id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{invoice.invoiceId}</div>
+                          <div className="text-sm text-muted-foreground">{invoice.orderId}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{invoice.customer?.name}</div>
+                          <div className="text-sm text-muted-foreground">{invoice.customer?.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadge(invoice.status)}>
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(invoice.total)}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.paymentMethod ? (
+                          <div>
+                            <div>{invoice.paymentMethod}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {invoice.paidDate ? new Date(invoice.paidDate).toLocaleDateString() : '-'}
+                            </div>
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => viewDetails(invoice)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => recordPayment(invoice)}>
+                              <DollarSign className="h-4 w-4 mr-2" />
+                              Record Payment
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => sendReminder(invoice)}>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Send Reminder
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                      No pending invoices found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
         
         <TabsContent value="overdue" className="space-y-4">
-          <InvoiceTable 
-            invoices={invoices.filter(invoice => 
-              invoice.status === 'overdue' && 
-              (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-            )} 
-            loading={loading} 
-            showSearch={false} 
-          />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10">
+                      Loading invoices...
+                    </TableCell>
+                  </TableRow>
+                ) : invoices.filter(invoice => 
+                    invoice.status === 'overdue' && 
+                    (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  ).length > 0 ? (
+                  invoices.filter(invoice => 
+                    invoice.status === 'overdue' && 
+                    (invoice.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     invoice.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  ).map((invoice) => (
+                    <TableRow key={invoice._id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{invoice.invoiceId}</div>
+                          <div className="text-sm text-muted-foreground">{invoice.orderId}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{invoice.customer?.name}</div>
+                          <div className="text-sm text-muted-foreground">{invoice.customer?.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusBadge(invoice.status)}>
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(invoice.total)}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.paymentMethod ? (
+                          <div>
+                            <div>{invoice.paymentMethod}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {invoice.paidDate ? new Date(invoice.paidDate).toLocaleDateString() : '-'}
+                            </div>
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuItem onClick={() => viewDetails(invoice)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => recordPayment(invoice)}>
+                              <DollarSign className="h-4 w-4 mr-2" />
+                              Record Payment
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => sendReminder(invoice)}>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Send Reminder
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                      No overdue invoices found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         <TabsContent value="receipt-review" className="space-y-4">
@@ -981,9 +736,6 @@ export default function Billing() {
           ) : pendingReceipts.length === 0 ? (
             <div className="p-8 text-center">
               <p className="text-muted-foreground">No pending receipts to review</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Debug: Found {pendingReceipts.length} receipts
-              </p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1032,28 +784,13 @@ export default function Billing() {
                     )}
                     
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedReceipt(order);
-                          setIsReceiptDialogOpen(true);
-                        }}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => { setSelectedReceipt(order); setIsReceiptDialogOpen(true); }}>
                         View Details
                       </Button>
-                      <Button 
-                        size="sm" 
-                        onClick={() => approveReceipt(order._id)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
+                      <Button size="sm" onClick={() => approveReceipt(order._id)} className="bg-green-600 hover:bg-green-700">
                         Approve
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => rejectReceipt(order._id)}
-                      >
+                      <Button size="sm" variant="destructive" onClick={() => rejectReceipt(order._id)}>
                         Reject
                       </Button>
                     </div>
@@ -1118,7 +855,7 @@ export default function Billing() {
                         {formatCurrency(selectedReceipt.payment_receipt.paymentDetails.depositedAmount)}
                       </p>
                       {Math.abs(selectedReceipt.payment_receipt.paymentDetails.depositedAmount - (selectedReceipt.total || selectedReceipt.final_amount)) > 0.01 && (
-                        <p className="text-xs text-red-600 mt-1">⚠️ Amount doesn't match order total</p>
+                        <p className="text-xs text-red-600 mt-1">Amount doesn't match order total</p>
                       )}
                     </div>
                     <div>
@@ -1142,15 +879,7 @@ export default function Billing() {
                 <div className="border rounded-lg p-4">
                   <h4 className="font-semibold mb-2">Receipt Image</h4>
                   <div className="max-h-96 overflow-auto">
-                    <img 
-                      src={`http://localhost:5000/uploads/receipts/${selectedReceipt.payment_receipt.filename}`}
-                      alt="Payment Receipt"
-                      className="max-w-full h-auto rounded border"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
+                    <img src={`http://localhost:5000/uploads/receipts/${selectedReceipt.payment_receipt.filename}`} alt="Payment Receipt" className="max-w-full h-auto rounded border" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}/>
                     <div style={{display: 'none'}} className="p-8 text-center text-muted-foreground border rounded">
                       Receipt image could not be loaded. File: {selectedReceipt.payment_receipt.originalName}
                     </div>
@@ -1159,17 +888,10 @@ export default function Billing() {
               )}
               
               <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={() => approveReceipt(selectedReceipt._id)}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
+                <Button onClick={() => approveReceipt(selectedReceipt._id)} className="flex-1 bg-green-600 hover:bg-green-700">
                   ✅ Approve Payment
                 </Button>
-                <Button 
-                  variant="destructive"
-                  onClick={() => rejectReceipt(selectedReceipt._id)}
-                  className="flex-1"
-                >
+                <Button variant="destructive" onClick={() => rejectReceipt(selectedReceipt._id)} className="flex-1">
                   ❌ Reject Payment
                 </Button>
               </div>
@@ -1300,14 +1022,7 @@ export default function Billing() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="amount">Payment Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                value={paymentData.amount}
-                onChange={(e) => setPaymentData(prev => ({ ...prev, amount: parseFloat(e.target.value) }))}
-                placeholder="Enter amount"
-              />
+              <Input id="amount" type="number" step="0.01" value={paymentData.amount} onChange={(e) => setPaymentData(prev => ({ ...prev, amount: parseFloat(e.target.value) }))} placeholder="Enter amount"/>
             </div>
             
             <div>
@@ -1322,10 +1037,6 @@ export default function Billing() {
                 <SelectContent>
                   <SelectItem value="cash">Cash</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="credit_card">Credit Card</SelectItem>
-                  <SelectItem value="debit_card">Debit Card</SelectItem>
-                  <SelectItem value="check">Check</SelectItem>
-                  <SelectItem value="online">Online Payment</SelectItem>
                 </SelectContent>
               </Select>
             </div>

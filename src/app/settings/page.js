@@ -29,11 +29,9 @@ import {
   CheckCircle, 
   Loader2, 
   User, 
-  Plus, 
   Edit2, 
   Trash2,
-  Save,
-  RotateCcw
+  Save
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 const logout = () => { 
@@ -71,28 +69,12 @@ export default function Settings() {
     }
   });
 
-  // System Settings State
-  const [systemSettings, setSystemSettings] = useState({
-    timezone: 'america-los_angeles',
-    dateFormat: 'mm-dd-yyyy',
-    automaticBackups: 'daily',
-    maintenanceMode: false
-  });
-
   // Notification Settings State
   const [notificationSettings, setNotificationSettings] = useState({
     businessEmail: true,
     production: true,
     delivery: true,
     systemUpdates: false
-  });
-
-  // Integration Settings State
-  const [integrationSettings, setIntegrationSettings] = useState({
-    accounting: { connected: false, provider: '' },
-    shipping: { connected: false, provider: '' },
-    payment: { connected: true, provider: 'stripe' },
-    emailMarketing: { connected: false, provider: '' }
   });
 
   // User Management State
@@ -150,15 +132,7 @@ export default function Settings() {
         businessHours: settings.businessHours
       });
 
-      setSystemSettings({
-        timezone: settings.timezone,
-        dateFormat: settings.dateFormat,
-        automaticBackups: settings.automaticBackups,
-        maintenanceMode: settings.maintenanceMode
-      });
-
       setNotificationSettings(settings.notifications);
-      setIntegrationSettings(settings.integrations);
     } catch (error) {
       console.error('Error fetching settings:', error);
       setError('Failed to load settings. Please try again.');
@@ -225,37 +199,6 @@ export default function Settings() {
     } catch (error) {
       console.error('Error saving notification settings:', error);
       showMessage('Failed to save notification settings. Please try again.', true);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveSystemSettings = async () => {
-    try {
-      setSaving(true);
-      await api.put('/settings/system', systemSettings);
-      showMessage('System settings saved successfully!');
-    } catch (error) {
-      console.error('Error saving system settings:', error);
-      showMessage('Failed to save system settings. Please try again.', true);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const resetSettings = async () => {
-    if (!confirm('Are you sure you want to reset all settings to defaults? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      await api.post('/settings/reset');
-      showMessage('Settings reset to defaults successfully!');
-      await fetchSettings();
-    } catch (error) {
-      console.error('Error resetting settings:', error);
-      showMessage('Failed to reset settings. Please try again.', true);
     } finally {
       setSaving(false);
     }
@@ -370,6 +313,8 @@ export default function Settings() {
                     placeholder="Your company name" 
                     value={companySettings.companyName}
                     onChange={(e) => setCompanySettings({...companySettings, companyName: e.target.value})}
+                    readOnly={currentUser?.role !== 'Admin'}
+                    className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -379,6 +324,8 @@ export default function Settings() {
                     placeholder="https://www.example.com" 
                     value={companySettings.website}
                     onChange={(e) => setCompanySettings({...companySettings, website: e.target.value})}
+                    readOnly={currentUser?.role !== 'Admin'}
+                    className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -389,6 +336,8 @@ export default function Settings() {
                     placeholder="contact@example.com" 
                     value={companySettings.businessEmail}
                     onChange={(e) => setCompanySettings({...companySettings, businessEmail: e.target.value})}
+                    readOnly={currentUser?.role !== 'Admin'}
+                    className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -398,6 +347,8 @@ export default function Settings() {
                     placeholder="+1 (555) 000-0000" 
                     value={companySettings.phone}
                     onChange={(e) => setCompanySettings({...companySettings, phone: e.target.value})}
+                    readOnly={currentUser?.role !== 'Admin'}
+                    className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -407,6 +358,8 @@ export default function Settings() {
                     placeholder="Street Address, City, State, ZIP" 
                     value={companySettings.address}
                     onChange={(e) => setCompanySettings({...companySettings, address: e.target.value})}
+                    readOnly={currentUser?.role !== 'Admin'}
+                    className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -416,6 +369,8 @@ export default function Settings() {
                     placeholder="Tax ID or VAT number" 
                     value={companySettings.taxId}
                     onChange={(e) => setCompanySettings({...companySettings, taxId: e.target.value})}
+                    readOnly={currentUser?.role !== 'Admin'}
+                    className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                   />
                 </div>
                 <div className="space-y-2">
@@ -423,6 +378,8 @@ export default function Settings() {
                   <Select 
                     value={companySettings.currency}
                     onValueChange={(value) => setCompanySettings({...companySettings, currency: value})}
+                    readOnly={currentUser?.role !== 'Admin'}
+                    className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                   >
                     <SelectTrigger id="currency">
                       <SelectValue placeholder="Select currency" />
@@ -444,15 +401,19 @@ export default function Settings() {
                   placeholder="Brief description of your printing business" 
                   value={companySettings.businessDescription}
                   onChange={(e) => setCompanySettings({...companySettings, businessDescription: e.target.value})}
+                  readOnly={currentUser?.role !== 'Admin'}
+                  className={currentUser?.role !== 'Admin' ? 'bg-gray-50' : ''}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={saveCompanySettings} disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </Button>
+              {currentUser?.role === 'Admin' && (
+                <Button onClick={saveCompanySettings} disabled={saving}>
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </Button>
+              )}
             </CardFooter>
           </Card>
 
@@ -498,11 +459,13 @@ export default function Settings() {
               </div>
             </CardContent>
             <CardFooter>
+              {currentUser?.role === 'Admin' && (
               <Button onClick={saveBusinessHours} disabled={saving}>
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
                 Save Hours
               </Button>
+              )}
             </CardFooter>
           </Card>
         </TabsContent>

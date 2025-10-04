@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mail, CheckCircle, XCircle, RefreshCw, Shield } from "lucide-react";
+import { Mail, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 
 export default function VerifyEmail() {
   const [status, setStatus] = useState('input'); // 'input', 'verifying', 'success', 'error'
@@ -15,6 +14,8 @@ export default function VerifyEmail() {
   const [resendEmail, setResendEmail] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
   const [hasToken, setHasToken] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [resendMessage, setResendMessage] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -94,20 +95,22 @@ export default function VerifyEmail() {
     e.preventDefault();
     
     if (!verificationCode || verificationCode.length !== 6) {
-      alert('Please enter a valid 6-digit verification code');
+      setFormError('Please enter a valid 6-digit verification code');
       return;
     }
     
+    setFormError('');
     verifyEmailCode(verificationCode);
   };
 
   const handleResendVerification = async () => {
     if (!resendEmail) {
-      alert('Please enter your email address');
+      setResendMessage('Please enter your email address');
       return;
     }
 
     setResendLoading(true);
+    setResendMessage('');
     
     try {
       const response = await fetch('http://localhost:5000/api/auth/resend-verification', {
@@ -119,13 +122,13 @@ export default function VerifyEmail() {
       const data = await response.json();
 
       if (response.ok) {
-        alert('Verification email sent successfully!');
+        setResendMessage('Verification email sent successfully!');
         setResendEmail('');
       } else {
-        alert('Error: ' + data.message);
+        setResendMessage('Error: ' + data.message);
       }
     } catch (error) {
-      alert('An error occurred while sending verification email');
+      setResendMessage('An error occurred while sending verification email');
     } finally {
       setResendLoading(false);
     }
@@ -346,10 +349,10 @@ export default function VerifyEmail() {
                 </div>
 
                 {/* Error Message */}
-                {status === 'error' && (
+                {(status === 'error' || formError) && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <p className="text-red-800 text-sm">
-                      {message || 'Invalid or expired verification code. Please try again.'}
+                      {formError || message || 'Invalid or expired verification code. Please try again.'}
                     </p>
                   </div>
                 )}
@@ -376,6 +379,13 @@ export default function VerifyEmail() {
                 <p className="text-sm text-gray-600 mb-3 text-center">
                   Didn't receive the code?
                 </p>
+                {resendMessage && (
+                  <div className={`mb-3 p-2 rounded ${resendMessage.includes('successfully') ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <p className={`text-sm ${resendMessage.includes('successfully') ? 'text-green-800' : 'text-red-800'}`}>
+                      {resendMessage}
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <input
                     type="email"

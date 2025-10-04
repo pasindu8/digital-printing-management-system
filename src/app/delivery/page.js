@@ -158,23 +158,13 @@ export default function Delivery() {
     }
   }, []);
 
-  // Debug effect to track deliveries changes
-  useEffect(() => {
-    console.log('Deliveries updated:', {
-      count: deliveries.length,
-      filteredCount: deliveries.filter(d => 
-        d.customer?.address?.coordinates?.lat && d.customer?.address?.coordinates?.lng
-      ).length,
-      sampleDelivery: deliveries[0] || null
-    });
-  }, [deliveries]);
+
 
   // Auto-refresh functionality
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {
-      console.log('Auto-refreshing delivery data...');
       fetchDeliveries();
       setLastUpdated(new Date());
     }, 30000); // Refresh every 30 seconds
@@ -240,7 +230,7 @@ export default function Delivery() {
       
       // Log for debugging
       if (isCustomer && deliveriesData.length === 0) {
-        console.log('No deliveries found for customer. This might be expected if no deliveries exist.');
+        // No deliveries found for customer - this is expected in some cases
       }
       
     } catch (err) {
@@ -264,18 +254,6 @@ export default function Delivery() {
     }
   };
 
-  const handleManualRefresh = async () => {
-    console.log('Manual refresh triggered');
-    await fetchDeliveries();
-    setLastUpdated(new Date());
-    
-    // Also refresh ready orders for non-customers
-    const userRole = localStorage.getItem('userRole');
-    if (userRole !== 'Customer') {
-      await fetchReadyOrders();
-    }
-  };
-
   const fetchReadyOrders = async () => {
     try {
       setReadyOrdersLoading(true);
@@ -290,8 +268,6 @@ export default function Delivery() {
       const response = await api.get('/orders/ready-for-pickup');
       const ordersData = response.data || [];
       setReadyOrders(ordersData);
-      
-      console.log(`Found ${ordersData.length} orders ready for pickup/delivery`);
       
     } catch (err) {
       console.error('Error fetching ready orders:', err);
@@ -336,6 +312,14 @@ export default function Delivery() {
         return;
       }
 
+      console.log('Scheduling delivery with data:', {
+        orderId: selectedOrderForSchedule,
+        scheduledDate: scheduleFormData.scheduledDate,
+        driverName: scheduleFormData.driverName,
+        estimatedTime: '09:00-17:00',
+        deliveryNotes: `Scheduled for delivery by ${scheduleFormData.driverName}`
+      });
+
       // Call the delivery scheduling API
       await api.post('/delivery/schedule', {
         orderId: selectedOrderForSchedule,
@@ -360,7 +344,15 @@ export default function Delivery() {
       alert('Order scheduled successfully!');
     } catch (err) {
       console.error('Error scheduling order:', err);
-      alert('Failed to schedule order. Please try again.');
+      
+      // Show more specific error message
+      if (err.response?.data?.message) {
+        alert(`Failed to schedule order: ${err.response.data.message}`);
+      } else if (err.response?.status === 500) {
+        alert('Server error occurred while scheduling. Please check the console for details.');
+      } else {
+        alert('Failed to schedule order. Please try again.');
+      }
     }
   };
 
@@ -397,30 +389,6 @@ export default function Delivery() {
     } catch (err) {
       console.error('Error creating delivery:', err);
       alert('Failed to schedule delivery');
-    }
-  };
-
-  const updateDeliveryStatus = async (deliveryId, newStatus) => {
-    try {
-      await api.patch(`/delivery/${deliveryId}/status`, { status: newStatus });
-      await fetchDeliveries();
-      alert('Delivery status updated successfully!');
-    } catch (err) {
-      console.error('Error updating delivery status:', err);
-      alert('Failed to update delivery status');
-    }
-  };
-
-  const deleteDelivery = async (deliveryId) => {
-    if (window.confirm('Are you sure you want to delete this delivery?')) {
-      try {
-        await api.delete(`/delivery/${deliveryId}`);
-        await fetchDeliveries();
-        alert('Delivery deleted successfully!');
-      } catch (err) {
-        console.error('Error deleting delivery:', err);
-        alert('Failed to delete delivery');
-      }
     }
   };
 
@@ -592,17 +560,7 @@ export default function Delivery() {
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleManualRefresh}
-                  disabled={loading}
-                >
-                  {loading ? <Clock className="h-4 w-4 animate-spin mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
-                  Refresh
-                </Button>
-                <Button variant="outline">
-                  Export
-                </Button>
+                
               </div>
             </div>
 
@@ -1126,15 +1084,6 @@ export default function Delivery() {
                 <div className="flex items-center justify-between">
                   <CardTitle>Delivery Map</CardTitle>
                   <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleManualRefresh}
-                      disabled={loading}
-                    >
-                      {loading ? <Clock className="h-4 w-4 animate-spin mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
-                      Refresh Map
-                    </Button>
                     <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
                   </div>
                 </div>

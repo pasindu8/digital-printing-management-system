@@ -73,11 +73,6 @@ export default function MaterialOrders() {
       setOrders(ordersRes.data);
       setSuppliers(suppliersRes.data);
       setMaterials(materialsRes.data);
-      console.log('Fetched data from backend:', {
-        orders: ordersRes.data.length,
-        suppliers: suppliersRes.data.length,
-        materials: materialsRes.data.length
-      });
     } catch (error) {
       console.error('Error fetching data:', error);
       alert('Failed to fetch data from backend. Please check if the backend server is running on http://localhost:5000');
@@ -197,7 +192,7 @@ export default function MaterialOrders() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
+            <Button className="bg-[#99cc00]" onClick={() => resetForm()}>
               <Plus className="h-4 w-4 mr-2" />
               New Order
             </Button>
@@ -285,20 +280,6 @@ export default function MaterialOrders() {
                   onChange={(e) => setFormData({...formData, delivery_date: e.target.value})}
                 />
               </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ordered">Ordered</SelectItem>
-                    <SelectItem value="In Transit">In Transit</SelectItem>
-                    <SelectItem value="Delivered">Delivered</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancel
@@ -339,7 +320,7 @@ export default function MaterialOrders() {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card>
+        <Card className="bg-[#ccffe6]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -348,7 +329,7 @@ export default function MaterialOrders() {
             <div className="text-2xl font-bold">{orders.length}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#ccccff]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Delivery</CardTitle>
             <Truck className="h-4 w-4 text-muted-foreground" />
@@ -359,7 +340,7 @@ export default function MaterialOrders() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#ffffcc]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Value</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -370,7 +351,7 @@ export default function MaterialOrders() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#ffcccc]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Transfers</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -441,7 +422,8 @@ export default function MaterialOrders() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button
+                  {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+                  <Button className="bg-[#00ccff] text-[#ffffff] hover:bg-[#99ebff] hover:text-[#000000]"
                     variant="outline"
                     size="sm"
                     onClick={() => handleEdit(order)}
@@ -449,8 +431,10 @@ export default function MaterialOrders() {
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
+                  )}
                   {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
                     <Button
+                      className="bg-[#2eb82e] text-[#ffffff] hover:bg-[#adebad] hover:text-[#000000]"
                       variant="outline"
                       size="sm"
                       onClick={() => markDelivered(order.order_id)}
@@ -459,7 +443,8 @@ export default function MaterialOrders() {
                       Mark Delivered
                     </Button>
                   )}
-                  <Button
+                  {order.damaged_items_amount === 0 && order.status !== 'Ordered' && order.status !== 'Pending' && (
+                  <Button className="bg-[#e68a00] text-[#ffffff] hover:bg-[#ffd699] hover:text-[#000000]"
                     variant="outline"
                     size="sm"
                     onClick={() => setDamaged(order.order_id)}
@@ -467,8 +452,9 @@ export default function MaterialOrders() {
                     <AlertTriangle className="h-4 w-4 mr-1" />
                     Set Damaged
                   </Button>
-                  {order.finance_transfer_status === 'Pending' && (
-                    <Button
+                  )}
+                  {order.status !== 'Ordered' && order.status !== 'Transferred' && (
+                    <Button className="bg-[#00e6b8] text-[#ffffff] hover:bg-[#99ffeb] hover:text-[#000000]"
                       variant="outline"
                       size="sm"
                       onClick={() => markTransferred(order.order_id)}
@@ -477,7 +463,9 @@ export default function MaterialOrders() {
                       Mark Transferred
                     </Button>
                   )}
-                  <Button
+
+                   {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+                  <Button className="bg-[#e60000] text-[#ffffff] hover:bg-[#ff9999] hover:text-[#000000]"
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(order.order_id)}
@@ -485,6 +473,7 @@ export default function MaterialOrders() {
                     <Trash2 className="h-4 w-4 mr-1" />
                     Delete
                   </Button>
+                    )}
                 </div>
               </CardContent>
             </Card>

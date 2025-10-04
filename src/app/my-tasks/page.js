@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Table,
@@ -20,7 +19,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
     ClipboardList, 
     Clock, 
@@ -122,10 +120,8 @@ export default function MyTasksPage() {
     const fetchAdminTasks = async () => {
         try {
             setLoading(true);
-            console.log('Fetching all assignments for admin user');
             // Use the admin endpoint to fetch all assigned orders
             const response = await api.get('/orders/admin/all-assignments');
-            console.log('Admin tasks response:', response.data);
             setOrders(response.data);
             setError(null);
         } catch (err) {
@@ -143,19 +139,15 @@ export default function MyTasksPage() {
 
     const fetchEmployeeByEmail = async (email) => {
         try {
-            console.log('Looking for employee with email:', email);
             // Try to find employee by email
             const response = await api.get(`/hr/employees?email=${email}`);
-            console.log('Employee search response:', response.data);
             
             if (response.data && response.data.length > 0) {
                 const employee = response.data[0];
-                console.log('Found employee:', employee);
                 setCurrentEmployee(employee);
                 fetchMyTasks(employee.employeeId);
                 fetchEmployeeInfo(employee.employeeId);
             } else {
-                console.log('No employee record found for email:', email);
                 // For users without employee records, create a mock employee or show appropriate message
                 setError(`No employee record found for ${email}. Please contact HR to set up your employee profile.`);
                 setLoading(false);
@@ -170,10 +162,8 @@ export default function MyTasksPage() {
     const fetchMyTasks = async (employeeId) => {
         try {
             setLoading(true);
-            console.log('Fetching tasks for employee ID:', employeeId);
             // Use the employeeId to fetch assigned orders
             const response = await api.get(`/orders/employee/${employeeId}`);
-            console.log('Tasks response:', response.data);
             setOrders(response.data);
             setError(null);
         } catch (err) {
@@ -209,7 +199,13 @@ export default function MyTasksPage() {
                 });
             }
             
-            await fetchMyTasks(currentEmployee?.employeeId); // Refresh the task list
+            // Refresh the task list based on user role
+            if (currentUser?.role === 'Admin' || currentUser?.role === 'General_Manager' || currentUser?.role === 'Order_Manager') {
+                await fetchAdminTasks(); // Refresh admin tasks
+            } else {
+                await fetchMyTasks(currentEmployee?.employeeId); // Refresh employee tasks
+            }
+            
             alert('Task status updated successfully!');
         } catch (err) {
             console.error('Error updating task status:', err);
@@ -460,7 +456,7 @@ export default function MyTasksPage() {
                                                 <TableCell>
                                                     <div className="flex gap-2">
                                                         {order.status === 'Confirmed' && (
-                                                            <Button 
+                                                            <Button className="bg-[#009900] text-[#ffffff] hover:bg-[#80ff80] hover:text-[#000000]"
                                                                 size="sm" 
                                                                 onClick={() => updateTaskStatus(order._id, 'In_Production')}
                                                             >
@@ -468,7 +464,7 @@ export default function MyTasksPage() {
                                                             </Button>
                                                         )}
                                                         {order.status === 'In_Production' && (
-                                                            <Button 
+                                                            <Button className="bg-[#009900] text-[#ffffff] hover:bg-[#99c2ff] hover:text-[#000000]"
                                                                 size="sm" 
                                                                 onClick={() => updateTaskStatus(order._id, 'Quality_Check')}
                                                             >
@@ -476,7 +472,7 @@ export default function MyTasksPage() {
                                                             </Button>
                                                         )}
                                                         {order.status === 'Quality_Check' && (
-                                                            <Button 
+                                                            <Button className="bg-[#9933ff] text-[#ffffff] hover:bg-#e6ccff] hover:text-[#000000]"
                                                                 size="sm" 
                                                                 onClick={() => updateTaskStatus(order._id, 'Ready_for_Pickup')}
                                                             >

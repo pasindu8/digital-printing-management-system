@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { MapPin, Truck, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 // Import leaflet CSS
@@ -176,12 +174,6 @@ const DeliveryMap = ({ deliveries, onDeliveryClick }) => {
     return false;
   });
   
-  // Debug log for development
-  console.log('DeliveryMap - Total deliveries:', deliveries.length);
-  console.log('DeliveryMap - Deliveries with coordinates:', deliveriesWithCoords.length);
-  console.log('DeliveryMap - Sample delivery with coords:', deliveriesWithCoords[0]);
-  console.log('DeliveryMap - Icons available:', !!icons);
-
   if (deliveriesWithCoords.length === 0) {
     return (
       <div className="p-10 flex items-center justify-center border rounded-md bg-gray-50 h-[400px]">
