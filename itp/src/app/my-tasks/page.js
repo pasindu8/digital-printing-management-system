@@ -1,0 +1,599 @@
+'use client';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { 
+    ClipboardList, 
+    Clock, 
+    CheckCircle, 
+    AlertTriangle,
+    Calendar,
+    User,
+    Briefcase,
+    Menu
+} from "lucide-react";
+import { Sidebar } from '@/components/layout/sidebar';
+import api from '../services/api';
+import { formatCurrency } from "@/lib/currency";
+import { getCurrentUser } from "@/middleware/auth";
+
+// Status badge component
+const StatusBadge = ({ status }) => {
+    let color;
+    switch (status) {
+        case "New":
+        case "Pending":
+            color = "bg-yellow-50 text-yellow-600 border-yellow-200";
+            break;
+        case "Confirmed":
+            color = "bg-emerald-50 text-emerald-600 border-emerald-200";
+            break;
+        case "In_Production":
+        case "In Production":
+            color = "bg-blue-50 text-blue-600 border-blue-200";
+            break;
+        case "Quality_Check":
+            color = "bg-purple-50 text-purple-600 border-purple-200";
+            break;
+        case "Ready_for_Pickup":
+        case "Ready_for_Delivery":
+            color = "bg-green-50 text-green-600 border-green-200";
+            break;
+        case "Completed":
+        case "Delivered":
+            color = "bg-gray-50 text-gray-600 border-gray-200";
+            break;
+        case "Cancelled":
+            color = "bg-red-50 text-red-600 border-red-200";
+            break;
+        default:
+            color = "bg-gray-50 text-gray-600 border-gray-200";
+    }
+    return <Badge className={`border ${color}`}>{status.replace('_', ' ')}</Badge>;
+};
+
+// Priority badge component
+const PriorityBadge = ({ priority }) => {
+    let color;
+    switch (priority) {
+        case "urgent":
+            color = "bg-red-100 text-red-800 border-red-200";
+            break;
+        case "high":
+            color = "bg-orange-100 text-orange-800 border-orange-200";
+            break;
+        case "normal":
+            color = "bg-blue-100 text-blue-800 border-blue-200";
+            break;
+        case "low":
+            color = "bg-gray-100 text-gray-800 border-gray-200";
+            break;
+        default:
+            color = "bg-gray-100 text-gray-800 border-gray-200";
+    }
+    return <Badge variant="outline" className={color}>{priority?.toUpperCase()}</Badge>;
+};
+
+export default function MyTasksPage() {
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [filterStatus, setFilterStatus] = useState("all");
+    const [employeeInfo, setEmployeeInfo] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [currentEmployee, setCurrentEmployee] = useState(null);
+
+    // Sidebar state
+    const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar state
+    const [sidebarMinimized, setSidebarMinimized] = useState(false); // Desktop sidebar minimize state
+
+    // Sidebar functions
+    const toggleSidebar = () => { setSidebarOpen(!sidebarOpen); };
+    const toggleMinimize = () => { setSidebarMinimized(!sidebarMinimized); };
+
+    useEffect(() => {
+        // Get current user information
+        const user = getCurrentUser();
+        setCurrentUser(user);
+        
+        if (user) {
+            // Check if user is admin - if so, fetch all assignments
+            if (user.role === 'Admin' || user.role === 'General_Manager' || user.role === 'Order_Manager') {
+                fetchAdminTasks();
+            } else {
+                // Find employee by email and then fetch their tasks
+                fetchEmployeeByEmail(user.email);
+            }
+        } else {
+            setError('Please log in to view your tasks');
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchAdminTasks = async () => {
+        try {
+            setLoading(true);
+            // Use the admin endpoint to fetch all assigned orders
+            const response = await api.get('/orders/admin/all-assignments');
+            setOrders(response.data);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching admin tasks:', err);
+            console.error('Error details:', err.response?.data);
+            if (err.response?.status === 401) {
+                setError('Access denied. Please ensure you are logged in with admin privileges.');
+            } else {
+                setError('Failed to load assignments. Please make sure the backend server is running.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchEmployeeByEmail = async (email) => {
+        try {
+            // Try to find employee by email
+            const response = await api.get(`/hr/employees?email=${email}`);
+            
+            if (response.data && response.data.length > 0) {
+                const employee = response.data[0];
+                setCurrentEmployee(employee);
+                fetchMyTasks(employee.employeeId);
+                fetchEmployeeInfo(employee.employeeId);
+            } else {
+                // For users without employee records, create a mock employee or show appropriate message
+                setError(`No employee record found for ${email}. Please contact HR to set up your employee profile.`);
+                setLoading(false);
+            }
+        } catch (err) {
+            console.error('Error fetching employee by email:', err);
+            setError('Could not load employee information. Please try again or contact support.');
+            setLoading(false);
+        }
+    };
+
+    const fetchMyTasks = async (employeeId) => {
+        try {
+            setLoading(true);
+            // Use the employeeId to fetch assigned orders
+            const response = await api.get(`/orders/employee/${employeeId}`);
+            setOrders(response.data);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching my tasks:', err);
+            console.error('Error details:', err.response?.data);
+            setError('Failed to load your assigned tasks. Please make sure the backend server is running.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchEmployeeInfo = async (employeeId) => {
+        try {
+            const response = await api.get(`/hr/employees/${employeeId}/profile`);
+            setEmployeeInfo(response.data);
+        } catch (err) {
+            console.error('Error fetching employee info:', err);
+        }
+    };
+
+    const updateTaskStatus = async (orderId, newStatus) => {
+        try {
+            await api.put(`/orders/${orderId}`, { 
+                status: newStatus,
+                tracking_notes: `Status updated to ${newStatus} by ${employeeInfo?.personalInfo?.firstName || currentUser?.name || 'Employee'}`
+            });
+            
+            // Update employee workload if completing a task
+            if (newStatus === 'Completed' && currentEmployee?.employeeId) {
+                await api.post(`/hr/employees/${currentEmployee.employeeId}/workload/update`, {
+                    action: 'complete',
+                    orderId: orderId
+                });
+            }
+            
+            // Refresh the task list based on user role
+            if (currentUser?.role === 'Admin' || currentUser?.role === 'General_Manager' || currentUser?.role === 'Order_Manager') {
+                await fetchAdminTasks(); // Refresh admin tasks
+            } else {
+                await fetchMyTasks(currentEmployee?.employeeId); // Refresh employee tasks
+            }
+            
+            alert('Task status updated successfully!');
+        } catch (err) {
+            console.error('Error updating task status:', err);
+            alert('Failed to update task status');
+        }
+    };
+
+    // Filter orders based on status
+    const filteredOrders = orders.filter(order => {
+        if (filterStatus === "all") return true;
+        return order.status === filterStatus;
+    });
+
+    // Calculate statistics
+    const stats = {
+        total: orders.length,
+        pending: orders.filter(o => ['New', 'Pending', 'Confirmed'].includes(o.status)).length,
+        inProgress: orders.filter(o => ['In_Production', 'In Production', 'Quality_Check'].includes(o.status)).length,
+        completed: orders.filter(o => ['Completed', 'Delivered'].includes(o.status)).length,
+        urgent: orders.filter(o => o.priority === 'urgent').length
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="relative">
+                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200"></div>
+                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#049532] border-t-transparent absolute top-0 left-0"></div>
+                    </div>
+                    <p className="text-lg text-gray-700 font-medium">Loading your tasks...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <AlertTriangle className="h-16 w-16 text-red-500 mx-auto" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Tasks</h3>
+                    <p className="text-gray-500 mb-4">{error}</p>
+                    <Button 
+                        onClick={() => {
+                            if (currentUser?.role === 'Admin' || currentUser?.role === 'General_Manager' || currentUser?.role === 'Order_Manager') {
+                                fetchAdminTasks();
+                            } else {
+                                fetchEmployeeByEmail(currentUser?.email);
+                            }
+                        }}
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                    >
+                        Try Again
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 w-full max-w-full overflow-x-hidden flex">
+            {/* Sidebar */}
+            <Sidebar 
+                isOpen={sidebarOpen} 
+                toggleSidebar={toggleSidebar}
+                isMinimized={sidebarMinimized}
+                toggleMinimize={toggleMinimize}
+            />
+            
+            {/* Mobile backdrop */}
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
+            {/* Main Content Area - Adjusts width instead of being pushed */}
+            <div className={`flex-1 transition-all duration-300 ${sidebarMinimized ? 'lg:ml-16' : 'lg:ml-64'}`}>
+                {/* Header */}
+                <header className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-center h-16">
+                            {/* Logo */}
+                            <div className="flex items-center space-x-3">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="lg:hidden"
+                                    onClick={toggleSidebar}
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </Button>
+                                <img
+                                    src="/logo.png"
+                                    alt="First Promovier Logo"
+                                    className="h-10 w-10 rounded-full"
+                                />
+                                <div>
+                                    <h1 className="text-xl font-bold text-[#049532]">First Promovier</h1>
+                                    <p className="text-xs text-gray-600">Production Management</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Main Content */}
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="space-y-6">
+                        {/* Modern Header with Glassmorphism */}
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 via-emerald-600/10 to-teal-600/10 rounded-3xl blur-3xl"></div>
+                            <div className="relative bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-lg">
+                                            <ClipboardList className="h-8 w-8 text-white" />
+                                        </div>
+                                        <div>
+                                            <h1 className="text-5xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                                                Production Management
+                                            </h1>
+                                            <p className="text-xl text-slate-600 mt-2">
+                                                {currentUser?.role === 'Admin' || currentUser?.role === 'General_Manager' || currentUser?.role === 'Order_Manager' ?
+                                                    "Admin view: All order assignments across the organization." :
+                                                    employeeInfo ? 
+                                                        `Welcome back, ${employeeInfo.personalInfo.firstName}! Here are your assigned orders.` :
+                                                        "Here are your assigned orders and tasks."
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {employeeInfo && (
+                                        <div className="relative">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-white/50 to-green-50/50 rounded-2xl blur-xl"></div>
+                                            <Card className="relative bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl w-72">
+                                                <CardContent className="pt-4">
+                                                    <div className="flex items-center space-x-3">
+                                                        <User className="h-8 w-8 text-gray-400" />
+                                                        <div>
+                                                            <p className="font-medium">
+                                                                {employeeInfo.personalInfo.firstName} {employeeInfo.personalInfo.lastName}
+                                                            </p>
+                                                            <p className="text-sm text-gray-500">
+                                                                {employeeInfo.employment.position}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400">
+                                                                {employeeInfo.employment.department} Department
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modern Statistics Cards */}
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+                            <div className="group relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                <Card className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium text-slate-700">Total Tasks</CardTitle>
+                                        <Briefcase className="h-4 w-4 text-green-600" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-slate-800">{stats.total}</div>
+                                        <p className="text-xs text-slate-500">All assigned orders</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="group relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                <Card className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium text-slate-700">Pending</CardTitle>
+                                        <Clock className="h-4 w-4 text-blue-600" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-slate-800">{stats.pending}</div>
+                                        <p className="text-xs text-slate-500">Awaiting start</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="group relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                <Card className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium text-slate-700">In Progress</CardTitle>
+                                        <ClipboardList className="h-4 w-4 text-purple-600" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-slate-800">{stats.inProgress}</div>
+                                        <p className="text-xs text-slate-500">Currently working</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="group relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                <Card className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium text-slate-700">Completed</CardTitle>
+                                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-slate-800">{stats.completed}</div>
+                                        <p className="text-xs text-slate-500">Finished tasks</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="group relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                <Card className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium text-slate-700">Urgent</CardTitle>
+                                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-slate-800">{stats.urgent}</div>
+                                        <p className="text-xs text-slate-500">High priority</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+
+                        {/* Modern Filters Section */}
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/50 to-green-50/50 rounded-2xl blur-xl"></div>
+                            <div className="relative bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl">
+                                <div className="flex gap-4">
+                                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                        <SelectTrigger className="w-48 bg-white/50 backdrop-blur-sm border-white/20">
+                                            <SelectValue placeholder="Filter by status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Tasks</SelectItem>
+                                            <SelectItem value="New">New</SelectItem>
+                                            <SelectItem value="Confirmed">Confirmed</SelectItem>
+                                            <SelectItem value="In_Production">In Production</SelectItem>
+                                            <SelectItem value="Quality_Check">Quality Check</SelectItem>
+                                            <SelectItem value="Ready_for_Pickup">Ready for Pickup</SelectItem>
+                                            <SelectItem value="Completed">Completed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modern Tasks Table */}
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/50 to-green-50/50 rounded-2xl blur-xl"></div>
+                            <Card className="relative bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
+                                <CardHeader>
+                                    <CardTitle className="text-slate-800">Assigned Tasks ({filteredOrders.length})</CardTitle>
+                                    <CardDescription className="text-slate-600">
+                                        Orders and tasks assigned to you
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {filteredOrders.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <ClipboardList className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                                            <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
+                                            <p className="text-gray-500">
+                                                {filterStatus === "all" ? 
+                                                    "You don't have any assigned tasks at the moment." :
+                                                    `No tasks found with status: ${filterStatus.replace('_', ' ')}`
+                                                }
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow className="bg-green-50/50">
+                                                        <TableHead className="font-semibold text-slate-700">Order ID</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700">Customer</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700">Items</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700">Priority</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700">Deadline</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700">Total Value</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700">Actions</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                    <TableBody>
+                                        {filteredOrders.map((order) => (
+                                            <TableRow key={order._id}>
+                                                <TableCell className="font-medium">
+                                                    {order.orderId}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div>
+                                                        <p className="font-medium">{order.customer_name}</p>
+                                                        {order.customer_phone && (
+                                                            <p className="text-xs text-gray-500">{order.customer_phone}</p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div>
+                                                        <p>{order.items?.length || 0} item(s)</p>
+                                                        {order.items?.[0] && (
+                                                            <p className="text-xs text-gray-500">
+                                                                {order.items[0].product}
+                                                                {order.items.length > 1 && ` +${order.items.length - 1} more`}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <PriorityBadge priority={order.priority} />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center text-sm">
+                                                        <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                                                        {order.delivery_date ? 
+                                                            new Date(order.delivery_date).toLocaleDateString() : 
+                                                            order.expected_completion_date ?
+                                                            new Date(order.expected_completion_date).toLocaleDateString() :
+                                                            'TBD'
+                                                        }
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatCurrency(order.final_amount || order.total)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <StatusBadge status={order.status} />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex gap-2">
+                                                        {order.status === 'Confirmed' && (
+                                                            <Button className="bg-[#009900] text-[#ffffff] hover:bg-[#80ff80] hover:text-[#000000]"
+                                                                size="sm" 
+                                                                onClick={() => updateTaskStatus(order._id, 'In_Production')}
+                                                            >
+                                                                Start
+                                                            </Button>
+                                                        )}
+                                                        {order.status === 'In_Production' && (
+                                                            <Button className="bg-[#009900] text-[#ffffff] hover:bg-[#99c2ff] hover:text-[#000000]"
+                                                                size="sm" 
+                                                                onClick={() => updateTaskStatus(order._id, 'Quality_Check')}
+                                                            >
+                                                                QC
+                                                            </Button>
+                                                        )}
+                                                        {order.status === 'Quality_Check' && (
+                                                            <Button className="bg-[#9933ff] text-[#ffffff] hover:bg-#e6ccff] hover:text-[#000000]"
+                                                                size="sm" 
+                                                                onClick={() => updateTaskStatus(order._id, 'Ready_for_Pickup')}
+                                                            >
+                                                                Ready
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    );
+}
