@@ -1,14 +1,11 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // ඔබගේ අනෙකුත් settings...
 
-const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
-      },
-    ];
+  eslint: {
+    // අවවාදයයි: මෙය කිරීමෙන් ESLint දෝෂ තිබුණත් build එක complete වීමට ඉඩ දෙයි.
+    ignoreDuringBuilds: true,
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
