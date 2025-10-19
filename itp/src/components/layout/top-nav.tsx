@@ -33,7 +33,7 @@ export function TopNav({ toggleSidebar, onCreateOrder, showCreateOrderButton = f
     logout();
   };
 
-  const getRoleDisplayName = (role) => {
+  const getRoleDisplayName = (role: string) => {
     const roleMap = {
       'Admin': 'Administrator',
       'General_Manager': 'General Manager',
