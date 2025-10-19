@@ -34,7 +34,7 @@ export function TopNav({ toggleSidebar, onCreateOrder, showCreateOrderButton = f
   };
 
   const getRoleDisplayName = (role: string) => {
-    const roleMap = {
+   const roleMap: { [key: string]: string } = {
       'Admin': 'Administrator',
       'General_Manager': 'General Manager',
       'Order_Manager': 'Order Manager',
